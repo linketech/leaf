@@ -1,0 +1,26 @@
+{
+  "name": "@linke/leaf",
+  "version": "0.0.1",
+  "description": "A cli tool maked by (l)ink(e) to deploy serverless to (a)liyun (f)untion computing.",
+  "main": "index.js",
+  "bin": {
+    "leaf": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "vincent-ng",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^4.0.1",
+    "fs-extra": "^8.1.0",
+    "globby": "^10.0.1",
+    "js-yaml": "^3.13.1",
+    "ramda": "^0.26.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2"
+  }
+}
