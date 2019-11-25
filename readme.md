@@ -1,6 +1,6 @@
 # leaf
 
-A cli tool maked by (l)ink(e) to deploy serverless to (a)liyun (f)untion computing.
+A cli tool maked by (l)ink(e) for deploying serverless to (a)liyun (f)untion computing.
 
 ## Install
 
@@ -50,7 +50,7 @@ app.listen(8080, () => console.log('Server start'))
 module.exports = { app } // important
 ```
 
-Make sure you have a package.json with corrected dependencies declaration and package name.
+Make sure you have a package.json with correct dependencies declaration and package name.
 
 Then run
 
