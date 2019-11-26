@@ -15,5 +15,6 @@
   "leafEnv": {
     "MYSQL_USER": "root",
     "MYSQL_PASS": null
-  }
+  },
+  "leafStatic": ["static"]
 }

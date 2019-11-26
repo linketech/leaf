@@ -6,9 +6,9 @@
   "bin": {
     "leaf": "index.js"
   },
-  "repository" : {
-    "type" : "git",
-    "url" : "https://github.com/linketech/leaf.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linketech/leaf.git"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

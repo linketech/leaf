@@ -45,15 +45,18 @@ const getConfig = () => {
 	if (!config.packageJson) {
 		throw new Error(`package.json not found in ${config.srcPath}`)
 	}
-	config.packageJson.dependencies = Object.assign(config.packageJson.dependencies, { '@webserverless/fc-express': '^0.1.1' })
+	const staticOnly = !config.packageJson.main
+	const additionDependencies = { '@webserverless/fc-express': '^0.1.1', 'serve-static': '^1.14.1', 'koa-static': '^5.0.0' }
+	config.packageJson.dependencies = Object.assign(config.packageJson.dependencies, additionDependencies)
 	config.packageJson.dependencies = config.packageJson.dependencies || ''
 	Object.assign(config, R.pickAll(['name'], config.packageJson))
 	config.env = config.packageJson.leafEnv || {}
+	config.static = config.packageJson.leafStatic || (staticOnly ? ['.'] : [])
 
 	// read leaf.json
 	const configFile = tryToRequireJson(path.join(config.srcPath, 'leaf.json'))
 	if (configFile) {
-		Object.assign(config, R.pickAll(['name', 'env'], configFile))
+		Object.assign(config, R.pickBy(v => !!v, R.pickAll(['name', 'static', 'env'], configFile)))
 	}
 
 	// env
@@ -86,7 +89,7 @@ const templateYML = {
 				Events: {
 					httpTrigger: {
 						Type: 'HTTP',
-						Properties: { AuthType: 'ANONYMOUS', Methods: ['POST', 'GET'] },
+						Properties: { AuthType: 'ANONYMOUS', Methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'] },
 					},
 				},
 			},
@@ -117,6 +120,7 @@ try {
 	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 	fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
+	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(['name', 'static', 'env'], config), null, 2))
 
 	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
 

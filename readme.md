@@ -30,7 +30,11 @@ app.all('', (req, res) => {
 })
 app.listen(8080, () => console.log('Server start'))
 
-module.exports = { app } // important
+// export the app instance
+module.exports = { expressApp: app }
+// or just
+// module.exports = { app }
+
 ```
 
 Or
@@ -47,7 +51,11 @@ app.use(async (ctx) => {
 })
 app.listen(8080, () => console.log('Server start'))
 
-module.exports = { app } // important
+// export the app instance
+module.exports = { koaApp: app }
+// or just
+// module.exports = { app }
+
 ```
 
 Make sure you have a package.json with correct dependencies declaration and package name.
