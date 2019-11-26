@@ -16,6 +16,16 @@ program
 const checkFile = (jsonFilePath, isWhat) => fs.existsSync(jsonFilePath) && fs.statSync(jsonFilePath)[isWhat]()
 const tryToRequireJson = jsonFilePath => (checkFile(jsonFilePath, 'isFile') ? JSON.parse(fs.readFileSync(jsonFilePath)) : null)
 
+const copyAllTo = (srcPath, dstPath, globList) => {
+	const srcList = globby.sync(globList, { cwd: srcPath, dot: true })
+	// console.debug('copy', srcList, 'to', dstPath)
+	srcList.forEach((e) => {
+		const src = path.join(srcPath, e)
+		const dest = path.join(dstPath, e)
+		fs.ensureDirSync(path.dirname(dest))
+		fs.copySync(src, dest)
+	})
+}
 
 const getConfig = () => {
 	const dir = R.pathOr('', [0], program.args)
@@ -38,12 +48,16 @@ const getConfig = () => {
 	config.packageJson.dependencies = Object.assign(config.packageJson.dependencies, { '@webserverless/fc-express': '^0.1.1' })
 	config.packageJson.dependencies = config.packageJson.dependencies || ''
 	Object.assign(config, R.pickAll(['name'], config.packageJson))
+	config.env = config.packageJson.leafEnv || {}
 
 	// read leaf.json
 	const configFile = tryToRequireJson(path.join(config.srcPath, 'leaf.json'))
 	if (configFile) {
-		Object.assign(config, R.pickAll(['name'], configFile))
+		Object.assign(config, R.pickAll(['name', 'env'], configFile))
 	}
+
+	// env
+	Object.entries(config.env).forEach(([key, value]) => { config.env[key] = value === null ? process.env[key] : value })
 
 	// fc
 	config.functionName = config.name.split(/[^\w]+/g).join('-')
@@ -63,7 +77,12 @@ const templateYML = {
 			Properties: { Description: config.packageJson.description },
 			[config.functionName]: {
 				Type: 'Aliyun::Serverless::Function',
-				Properties: { Handler: '_index.handler', Runtime, CodeUri: './' },
+				Properties: {
+					Handler: '_index.handler',
+					Runtime,
+					CodeUri: './',
+					EnvironmentVariables: config.env,
+				},
 				Events: {
 					httpTrigger: {
 						Type: 'HTTP',
@@ -82,32 +101,34 @@ const templateYML = {
 	},
 }
 
-const templateFunfile = `RUNTIME ${Runtime}`
+const templateFunfile = `
+	RUNTIME ${Runtime}
+	COPY ./package.json .
+	RUN npm install
+	${R.pathOr(false, ['packageJson', 'scripts', 'build'], config) ? 'RUN npm run build' : ''}
+`.replace(/\n\t/g, '\n')
 
-const templateIndexHandler = fs.readFileSync(path.join(__dirname, 'template/index.js'))
+try {
+	// copy src files
+	copyAllTo(config.srcPath, config.dstPath, ['**/*', '!**/node_modules', '!temp'])
 
-// copy src files
-const srcList = globby.sync(['**/*', '!**/node_modules', '!temp'], { cwd: config.srcPath })
-// console.log('copy', srcList, 'to', config.dstPath)
-srcList.forEach((e) => {
-	const src = path.join(config.srcPath, e)
-	const dest = path.join(config.dstPath, e)
-	fs.ensureDirSync(path.dirname(dest))
-	fs.copySync(src, dest)
-})
+	// generate config
+	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'])
+	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
+	fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
+	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
 
-// generate config
-fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
-fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
-fs.writeFileSync(path.join(config.dstPath, '_index.js'), templateIndexHandler)
-fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
+	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
 
-// local deploy
-const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
-cp.execSync('npx fun install', funOpts)
-if (program.debug) {
-	cp.execSync('npx fun local start', funOpts)
-} else {
-	cp.execSync('npx fun deploy', funOpts)
-	fs.removeSync(config.dstPath)
+	// local deploy
+	cp.execSync('npx fun install', funOpts)
+	if (program.debug) {
+		cp.execSync('npx fun local start', funOpts)
+	} else {
+		cp.execSync('npx fun deploy', funOpts)
+		fs.removeSync(config.dstPath)
+	}
+} catch (e) {
+	console.error(e.message)
+	// console.debug(e.stack)
 }

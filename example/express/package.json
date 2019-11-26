@@ -4,11 +4,16 @@
   "description": "",
   "main": "lib/index.js",
   "scripts": {
+    "build": "echo building...",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1"
+  },
+  "leafEnv": {
+    "MYSQL_USER": "root",
+    "MYSQL_PASS": null
   }
 }

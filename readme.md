@@ -55,13 +55,53 @@ Make sure you have a package.json with correct dependencies declaration and pack
 Then run
 
 ```bash
+leaf
+```
+
+Or
+
+```bash
 leaf deploy
 ```
 
 ## Debug
 
-Use -d or --debug to deploy locally. Make sure docker is installed.
+Use -d or --debug to deploy locally when you has docker installed.
 
 ```bash
 leaf deploy --debug
 ```
+
+## Environment Variables
+
+Use leafEvn in package.json
+
+```json
+{
+	"name": "example",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"leafEnv": {
+		"MYSQL_USER": "root",
+		"MYSQL_PASS": null
+	}
+}
+```
+
+Or
+
+Use env in leaf.json
+
+```json
+{
+	"name": "example",
+	"env": {
+		"MYSQL_USER": "root",
+		"MYSQL_PASS": null
+	}
+}
+```
+
+When env value is set to null, leaf will read the env vars value from current shell.
+So you can keep your sensitive information away from the codes.
