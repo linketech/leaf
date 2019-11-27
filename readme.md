@@ -18,20 +18,26 @@ leaf config
 
 ## Usage
 
+### for the backend code:
+
+You should let leaf knows your express/koa instance.
+
 Exports your express app object like this.
 Feel free to write other express logic.
 
 ```js
 const express = require('express')
 
+// leaf will export app for you iff the main file has the following code
 const app = express()
+
 app.all('', (req, res) => {
 	res.send(`${new Date()} hello world!`)
 })
 app.listen(8080, () => console.log('Server start'))
 
-// export the app instance
-module.exports = { expressApp: app }
+// or you can manually export the app instance
+// module.exports = { expressApp: app }
 // or just
 // module.exports = { app }
 
@@ -44,6 +50,9 @@ Feel free to write other koa logic.
 
 ```js
 const Koa = require('koa')
+
+const Koa = require('koa')
+// leaf will export app for you iff the main file has the following code
 const app = new Koa()
 
 app.use(async (ctx) => {
@@ -51,14 +60,21 @@ app.use(async (ctx) => {
 })
 app.listen(8080, () => console.log('Server start'))
 
-// export the app instance
-module.exports = { koaApp: app }
+// or you can manually export the app instance
+// module.exports = { koaApp: app }
 // or just
 // module.exports = { app }
 
 ```
 
 Make sure you have a package.json with correct dependencies declaration and package name.
+
+### for the frontend code
+
+if you need leaf to run the commands for you,
+use the "build" option to declare commands for the code building.
+You can also build the code manually and just tell leaf where are the static files,
+using "static" option.
 
 Then run
 
@@ -80,26 +96,58 @@ Use -d or --debug to deploy locally when you has docker installed.
 leaf deploy --debug
 ```
 
-## Environment Variables
+To stop all local container, run
+```bash
+docker stop $(docker ps -a -q)
+```
 
-Use leafEvn in package.json
+## Config Options
 
+Config can declare in package.json or leaf.json.
+
+When declare in package.json, please add the 'leaf' prefix. Just like
 ```json
 {
 	"name": "example",
-	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"leafEnv": {
-		"MYSQL_USER": "root",
-		"MYSQL_PASS": null
-	}
+	"leafServer": "server/",
+	"leafStatic": ["dist"],
+	"leafEnv": {}
 }
 ```
 
-Or
+Or declare in leaf.json without prefix
+```json
+{
+	"name": "example",
+	"server": "server/",
+	"static": ["dist"],
+	"env": {}
+}
+```
 
-Use env in leaf.json
+| Field			| Desc										| Default						| Type		|
+| :-			| :-										| :-							| :-		|
+| name			| the name of current project				| name of package.json			| String	|
+| description	| project description						| description of package.json	| String	|
+| server		| the backend code folder(has package.json)	| project dir					| String	|
+| static		| the static folders to be served			| no files are served			| Array		|
+| env			| declare the environment variables			|								| Map		|
+| build			| run build commands in the install stage	| scripts.build of package.json	| String	|
+|				|											|								|			|
+
+## Server Code Path
+
+By default, leaf will take the project dir as the path of backend server.
+If your backend server is in the subdirectory and has its own package.json,
+tell leaf the code path using field "server"
+
+## Serving static file
+
+Declare folders for static files.
+
+## Environment Variables
+
+Declare env variables with field "env".
 
 ```json
 {
@@ -113,3 +161,9 @@ Use env in leaf.json
 
 When env value is set to null, leaf will read the env vars value from current shell.
 So you can keep your sensitive information away from the codes.
+
+## Build script
+
+The leaf will run the build script(if declared) in the install stage.
+By defalut, leaf will take the scripts.build command if it is declared in the package.json.
+Or you can declare the command in leaf.json using field "build".

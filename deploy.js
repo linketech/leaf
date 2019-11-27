@@ -13,11 +13,14 @@ program
 	.option('-d, --debug', 'deploy and start locally. Docker is required.')
 	.parse(process.argv)
 
-const checkFile = (jsonFilePath, isWhat) => fs.existsSync(jsonFilePath) && fs.statSync(jsonFilePath)[isWhat]()
-const tryToRequireJson = jsonFilePath => (checkFile(jsonFilePath, 'isFile') ? JSON.parse(fs.readFileSync(jsonFilePath)) : null)
+const checkFile = (filePath, isWhat) => fs.existsSync(filePath) && fs.statSync(filePath)[isWhat]()
+const tryToRequire = (filePath, defaultValue = null) => (checkFile(filePath, 'isFile') ? fs.readFileSync(filePath, { encoding: 'utf8' }) : defaultValue)
+const tryToRequireJson = jsonFilePath => JSON.parse(tryToRequire(jsonFilePath, '{}'))
+const jsonRequirer = srcPath => file => tryToRequireJson(path.join(srcPath, file))
+const pickAllWithValule = (fields, obj) => R.pickBy(v => !!v, R.pickAll(fields, obj))
 
-const copyAllTo = (srcPath, dstPath, globList) => {
-	const srcList = globby.sync(globList, { cwd: srcPath, dot: true })
+const copyAllTo = (srcPath, dstPath, globList, opts) => {
+	const srcList = globby.sync(globList, { ...opts, cwd: srcPath })
 	// console.debug('copy', srcList, 'to', dstPath)
 	srcList.forEach((e) => {
 		const src = path.join(srcPath, e)
@@ -27,37 +30,73 @@ const copyAllTo = (srcPath, dstPath, globList) => {
 	})
 }
 
+const leafConfigFields = ['name', 'description', 'server', 'static', 'env']
+
+// extract fields of name, desc, leafXXX
+function getLeafConfigFromPackageJson(packageJson) {
+	const leafConfig = R.pickAll(['name', 'description'], packageJson)
+	Object.entries(packageJson).forEach(([k, v]) => {
+		const field = R.pathOr(null, [1], /^leaf([A-Z][\w]*)$/.exec(k))
+		if (field) {
+			leafConfig[field] = v
+		}
+	})
+	return leafConfig
+}
+
+function tryToHackIndexJs(content) {
+	if (!/app\s*=\s*[Ee]xpress\(\)/g.test(content) && !/app\s*=\s*new\s+[Kk]oa\(\)/g.test(content)) {
+		return content
+	}
+	return `${content}\nmodule.exports = { app }\n`
+}
+
 const getConfig = () => {
 	const dir = R.pathOr('', [0], program.args)
-	const config = {
-		name: path.basename(dir || __dirname),
-		srcPath: dir || '.',
-	}
-	config.dstPath = path.join(config.srcPath, 'temp')
+	const srcPath = dir || '.'
+	const requireJson = jsonRequirer(srcPath)
 
 	// do some check
-	if (!checkFile(config.srcPath, 'isDirectory')) {
-		throw new Error(`${config.srcPath} is not a directory`)
+	if (!checkFile(srcPath, 'isDirectory')) {
+		throw new Error(`${srcPath} is not a directory`)
 	}
 
-	// read package.json
-	config.packageJson = tryToRequireJson(path.join(config.srcPath, 'package.json'))
-	if (!config.packageJson) {
-		throw new Error(`package.json not found in ${config.srcPath}`)
+	// .leafignore
+	const ignoreList = tryToRequire(path.join(srcPath, '.leafignore'), '').split(/\r?\n/).filter(e => !!e)
+
+	// read package.json and leaf.json and merge
+	const packageJson4LeafConfig = getLeafConfigFromPackageJson(requireJson('package.json'))
+	const leafJson = requireJson('leaf.json')
+	const config = {
+		// default value
+		name: path.basename(dir || __dirname),
+		description: '',
+		server: '.',
+		static: [],
+		env: {},
+		build: R.pathOr('', ['scripts', 'build'], packageJson4LeafConfig),
+		// overwrite
+		...pickAllWithValule(leafConfigFields, packageJson4LeafConfig),
+		...pickAllWithValule(leafConfigFields, leafJson),
+		// fields can not be overwrited
+		srcPath,
+		dstPath: path.join(srcPath, 'temp'),
+		ignoreList,
 	}
-	const staticOnly = !config.packageJson.main
+	// read server package.json
+	const packageJson4Server = requireJson(path.join(config.server, 'package.json'))
 	const additionDependencies = { '@webserverless/fc-express': '^0.1.1', 'serve-static': '^1.14.1', 'koa-static': '^5.0.0' }
-	config.packageJson.dependencies = Object.assign(config.packageJson.dependencies, additionDependencies)
-	config.packageJson.dependencies = config.packageJson.dependencies || ''
-	Object.assign(config, R.pickAll(['name'], config.packageJson))
-	config.env = config.packageJson.leafEnv || {}
-	config.static = config.packageJson.leafStatic || (staticOnly ? ['.'] : [])
-
-	// read leaf.json
-	const configFile = tryToRequireJson(path.join(config.srcPath, 'leaf.json'))
-	if (configFile) {
-		Object.assign(config, R.pickBy(v => !!v, R.pickAll(['name', 'static', 'env'], configFile)))
+	packageJson4Server.dependencies = Object.assign(packageJson4Server.dependencies || {}, additionDependencies)
+	const staticOnly = !packageJson4Server.main
+	if (!staticOnly) {
+		packageJson4Server.main = path.join(config.server, packageJson4Server.main).replace(/\\/g, '/')
 	}
+
+	// package.json for generate
+	config.packageJson = packageJson4Server
+
+	// static
+	config.static = config.static || (staticOnly ? ['.'] : [])
 
 	// env
 	Object.entries(config.env).forEach(([key, value]) => { config.env[key] = value === null ? process.env[key] : value })
@@ -77,7 +116,7 @@ const templateYML = {
 	Resources: {
 		leaf: {
 			Type: 'Aliyun::Serverless::Service',
-			Properties: { Description: config.packageJson.description },
+			Properties: { Description: config.description },
 			[config.functionName]: {
 				Type: 'Aliyun::Serverless::Function',
 				Properties: {
@@ -107,24 +146,32 @@ const templateYML = {
 const templateFunfile = `
 	RUNTIME ${Runtime}
 	COPY ./package.json .
-	RUN npm install
-	${R.pathOr(false, ['packageJson', 'scripts', 'build'], config) ? 'RUN npm run build' : ''}
+	RUN npm install --production --registry https://registry.npm.taobao.org
+	${config.build ? 'RUN npm run build' : ''}
 `.replace(/\n\t/g, '\n')
 
 try {
 	// copy src files
-	copyAllTo(config.srcPath, config.dstPath, ['**/*', '!**/node_modules', '!temp'])
+	console.debug('copying file to', config.dstPath)
+	copyAllTo(config.srcPath, config.dstPath, ['**/*', '!**/node_modules', '!temp'], { ignore: config.ignoreList })
 
 	// generate config
-	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'])
+	console.debug('generating config files')
+	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
 	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 	fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
-	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(['name', 'static', 'env'], config), null, 2))
+	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
 
-	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
+	if (config.packageJson.main) {
+		const indexJsPath = path.join(config.dstPath, config.packageJson.main)
+		console.log('inspecting', indexJsPath)
+		fs.writeFileSync(indexJsPath, tryToHackIndexJs(tryToRequire(indexJsPath)))
+	}
 
 	// local deploy
+	console.debug('building')
+	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
 	cp.execSync('npx fun install', funOpts)
 	if (program.debug) {
 		cp.execSync('npx fun local start', funOpts)
@@ -134,5 +181,5 @@ try {
 	}
 } catch (e) {
 	console.error(e.message)
-	// console.debug(e.stack)
+	console.debug(e.stack)
 }
