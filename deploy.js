@@ -88,7 +88,12 @@ const getConfig = () => {
 	if (R.isEmpty(packageJson4Server)) {
 		throw new Error(`package.json not found in ${config.server}. Please check the leaf config of "server".`)
 	}
-	const additionDependencies = { '@webserverless/fc-express': '^0.1.1', 'serve-static': '^1.14.1', 'koa-static': '^5.0.0' }
+	const additionDependencies = {
+		'@webserverless/fc-express': '^0.1.1',
+		'koa-compress': '^3.0.0',
+		'koa-static': '^5.0.0',
+		'serve-static': '^1.14.1',
+	}
 	packageJson4Server.dependencies = Object.assign(packageJson4Server.dependencies || {}, additionDependencies)
 	const staticOnly = !packageJson4Server.main
 	if (!staticOnly) {

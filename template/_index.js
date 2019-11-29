@@ -1,6 +1,7 @@
 const { Server } = require('@webserverless/fc-express')
 const serveExpress = require('serve-static')
 const serveKoa = require('koa-static')
+const compressKoa = require('koa-compress')
 const config = require('./leaf.json')
 const md = require('.')
 
@@ -12,12 +13,13 @@ Object.entries(md).forEach(([key, value]) => {
 	}
 	if (key === 'expressApp' || value instanceof Function) {
 		console.log('using', key, 'as express app instance')
-		app = value
 		config.static.forEach(e => value.use(serveExpress(e)))
+		app = value
 	} else if (key === 'koaApp' || value.callback instanceof Function) {
 		console.log('using', key, 'as koa app instance')
-		app = value.callback()
 		config.static.reverse().forEach(e => value.middleware.unshift(serveKoa(e)))
+		value.middleware.unshift(compressKoa())
+		app = value.callback()
 	}
 })
 
