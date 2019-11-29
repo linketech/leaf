@@ -38,7 +38,7 @@ function getLeafConfigFromPackageJson(packageJson) {
 	Object.entries(packageJson).forEach(([k, v]) => {
 		const field = R.pathOr(null, [1], /^leaf([A-Z][\w]*)$/.exec(k))
 		if (field) {
-			leafConfig[field] = v
+			leafConfig[field.toLowerCase()] = v
 		}
 	})
 	return leafConfig
@@ -85,6 +85,9 @@ const getConfig = () => {
 	}
 	// read server package.json
 	const packageJson4Server = requireJson(path.join(config.server, 'package.json'))
+	if (R.isEmpty(packageJson4Server)) {
+		throw new Error(`package.json not found in ${config.server}. Please check the leaf config of "server".`)
+	}
 	const additionDependencies = { '@webserverless/fc-express': '^0.1.1', 'serve-static': '^1.14.1', 'koa-static': '^5.0.0' }
 	packageJson4Server.dependencies = Object.assign(packageJson4Server.dependencies || {}, additionDependencies)
 	const staticOnly = !packageJson4Server.main
@@ -99,10 +102,11 @@ const getConfig = () => {
 	config.static = config.static || (staticOnly ? ['.'] : [])
 
 	// env
-	Object.entries(config.env).forEach(([key, value]) => { config.env[key] = value === null ? process.env[key] : value })
+	Object.entries(config.env).forEach(([key, value]) => { config.env[key] = value === null && process.env[key] ? process.env[key] : value })
 
 	// fc
 	config.functionName = config.name.split(/[^\w]+/g).join('-')
+	config.domain = `${config.functionName}.leaf.dbjtech.com`
 	return config
 }
 
@@ -123,6 +127,8 @@ const templateYML = {
 					Handler: '_index.handler',
 					Runtime,
 					CodeUri: './',
+					MemorySize: 256,
+					Timeout: 60,
 					EnvironmentVariables: config.env,
 				},
 				Events: {
@@ -133,11 +139,11 @@ const templateYML = {
 				},
 			},
 		},
-		[`${config.functionName}.leaf.dbjtech.com`]: {
+		[config.domain]: {
 			Type: 'Aliyun::Serverless::CustomDomain',
 			Properties: {
 				Protocol: 'HTTP',
-				RouteConfig: { routes: { '/': { ServiceName: 'leaf', FunctionName: config.functionName } } },
+				RouteConfig: { routes: { '/*': { ServiceName: 'leaf', FunctionName: config.functionName } } },
 			},
 		},
 	},
@@ -158,10 +164,11 @@ try {
 	// generate config
 	console.debug('generating config files')
 	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
-	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 	fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
+	// console.debug(JSON.stringify(templateYML, null, 2))
+	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 
 	if (config.packageJson.main) {
 		const indexJsPath = path.join(config.dstPath, config.packageJson.main)
@@ -174,7 +181,7 @@ try {
 	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
 	cp.execSync('npx fun install', funOpts)
 	if (program.debug) {
-		cp.execSync('npx fun local start', funOpts)
+		cp.execSync(`npx fun local start ${config.domain}`, funOpts)
 	} else {
 		cp.execSync('npx fun deploy', funOpts)
 		fs.removeSync(config.dstPath)
