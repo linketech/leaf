@@ -16,5 +16,8 @@
     "MYSQL_USER": "root",
     "MYSQL_PASS": null
   },
-  "leafStatic": ["static"]
+  "leafStatic": [
+    "static",
+    "static2"
+  ]
 }

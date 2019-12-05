@@ -1,50 +1,79 @@
-const { Server } = require('@webserverless/fc-express')
-const serveExpress = require('serve-static')
+/* eslint-disable import/no-unresolved */
+const http = require('http')
 const serveKoa = require('koa-static')
-const compressKoa = require('koa-compress')
+const serveExpress = require('serve-static')
+const { Server } = require('@webserverless/fc-express')
 const config = require('./leaf.json')
-const md = require('.')
 
-let app = null
-Object.entries(md).forEach(([key, value]) => {
-	console.log(key, value)
-	if (app) {
-		return
-	}
-	if (key === 'expressApp' || value instanceof Function) {
-		console.log('using', key, 'as express app instance')
-		config.static.forEach(e => value.use(serveExpress(e)))
-		app = value
-	} else if (key === 'koaApp' || value.callback instanceof Function) {
-		console.log('using', key, 'as koa app instance')
-		config.static.reverse().forEach(e => value.middleware.unshift(serveKoa(e)))
-		value.middleware.unshift(compressKoa())
-		app = value.callback()
-	}
-})
+try {
+	// eslint-disable-next-line global-require
+	const Koa = require('koa')
 
-if (!app) {
-	throw new Error('http.Server/express/koa instance not found')
+	const rawKoaCallback = Koa.prototype.callback
+	Koa.prototype.callback = function callback() {
+		const cb = rawKoaCallback.apply(this)
+		cb.that = this // hack koa to return the app instance
+		return cb
+	}
+} catch (e) {
+	// it's fine
 }
 
-const server = new Server(app)
-// fix bug of fc-express
-server.httpTriggerProxy.forwardResponse = (function (response, resolver) {
-	var _this = server.httpTriggerProxy
-	var buf = []
-	response
-		.on('data', function (chunk) { return buf.push(chunk) })
-		.on('end', function () {
-		var bodyBuffer = Buffer.concat(buf)
-		var statusCode = response.statusCode
-		var headers = _this.getResponseHeaders(response)
-		var contentType = _this.getContentType({ contentTypeHeader: headers['content-type'] })
-		var isBase64Encoded = _this.isContentTypeBinaryMimeType({ contentType: contentType, binaryMimeTypes: _this.server.binaryTypes })
-		var successResponse = { statusCode: statusCode, body: bodyBuffer, headers: headers, isBase64Encoded: isBase64Encoded }
-		resolver(successResponse)
-	})
-})
 
+let app = null
+const rawCreateServer = http.createServer
+http.createServer = (...args) => {
+	// eslint-disable-next-line prefer-destructuring
+	app = args[0]
+	if (app instanceof http.Server) {
+		return app
+	}
+	if (app.listen instanceof Function) {
+		console.log('using express app instance')
+		config.static.forEach(e => app.use(serveExpress(e)))
+	} else if (app instanceof Function && app.that) {
+		console.log('using koa app instance')
+		config.static.reverse().forEach(e => app.that.middleware.unshift(serveKoa(e)))
+	}
+	return rawCreateServer(...args)
+}
+
+// eslint-disable-next-line import/no-unresolved
+require('.')
+
+http.createServer = rawCreateServer
+
+let server
+function createProxyServer() {
+	server = new Server(app)
+	// fix bug of fc-express
+	server.httpTriggerProxy.forwardResponse = ((response, resolver) => {
+		const that = server.httpTriggerProxy
+		const buf = []
+		response
+			.on('data', chunk => buf.push(chunk))
+			.on('end', () => {
+				const bodyBuffer = Buffer.concat(buf)
+				const { statusCode } = response
+				const headers = that.getResponseHeaders(response)
+				const contentType = that.getContentType({ contentTypeHeader: headers['content-type'] })
+				const isBase64Encoded = that.isContentTypeBinaryMimeType({ contentType, binaryMimeTypes: that.server.binaryTypes })
+				const successResponse = { statusCode, body: bodyBuffer, headers, isBase64Encoded }
+				resolver(successResponse)
+			})
+	})
+}
+
+if (!app) {
+	setTimeout(() => {
+		if (!app) {
+			throw new Error('express/koa not found')
+		}
+		createProxyServer()
+	}, 2000)
+} else {
+	createProxyServer()
+}
 
 module.exports.handler = (req, res, context) => {
 	server.httpProxy(req, res, context)

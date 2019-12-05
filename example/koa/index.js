@@ -47,5 +47,3 @@ app.use(router.routes())
 app.use(router.allowedMethods())
 
 app.listen(8080, () => console.log('Server start'))
-
-module.exports = { app }

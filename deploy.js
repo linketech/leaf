@@ -44,13 +44,6 @@ function getLeafConfigFromPackageJson(packageJson) {
 	return leafConfig
 }
 
-function tryToHackIndexJs(content) {
-	if (!/app\s*=\s*[Ee]xpress\(\)/g.test(content) && !/app\s*=\s*new\s+[Kk]oa\(\)/g.test(content)) {
-		return content
-	}
-	return `${content}\nmodule.exports = { app }\n`
-}
-
 const getConfig = () => {
 	const dir = R.pathOr('', [0], program.args)
 	const srcPath = dir || '.'
@@ -90,7 +83,6 @@ const getConfig = () => {
 	}
 	const additionDependencies = {
 		'@webserverless/fc-express': '^0.1.1',
-		'koa-compress': '^3.0.0',
 		'koa-static': '^5.0.0',
 		'serve-static': '^1.14.1',
 	}
@@ -169,22 +161,22 @@ try {
 	// generate config
 	console.debug('generating config files')
 	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
-	fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
-	// console.debug(JSON.stringify(templateYML, null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 
-	if (config.packageJson.main) {
-		const indexJsPath = path.join(config.dstPath, config.packageJson.main)
-		console.log('inspecting', indexJsPath)
-		fs.writeFileSync(indexJsPath, tryToHackIndexJs(tryToRequire(indexJsPath)))
+	if (config.build) {
+		fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
 	}
 
 	// local deploy
 	console.debug('building')
 	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
-	cp.execSync('npx fun install', funOpts)
+	if (config.build) {
+		cp.execSync('npx fun install', funOpts)
+	} else {
+		cp.execSync('npm install --production --registry https://registry.npm.taobao.org', funOpts)
+	}
 	if (program.debug) {
 		cp.execSync(`npx fun local start ${config.domain}`, funOpts)
 	} else {

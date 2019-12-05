@@ -1,1 +1,1 @@
-module.exports = require('./api')
+require('./api')

@@ -28,18 +28,12 @@ Feel free to write other express logic.
 ```js
 const express = require('express')
 
-// leaf will export app for you iff the main file has the following code
 const app = express()
-
 app.all('', (req, res) => {
 	res.send(`${new Date()} hello world!`)
 })
+// listen method must be call. Any port is ok
 app.listen(8080, () => console.log('Server start'))
-
-// or you can manually export the app instance
-// module.exports = { expressApp: app }
-// or just
-// module.exports = { app }
 
 ```
 
@@ -51,19 +45,12 @@ Feel free to write other koa logic.
 ```js
 const Koa = require('koa')
 
-const Koa = require('koa')
-// leaf will export app for you iff the main file has the following code
 const app = new Koa()
-
 app.use(async (ctx) => {
 	ctx.body = `${new Date()} hello world!`
 })
+// listen method must be call. Any port is ok
 app.listen(8080, () => console.log('Server start'))
-
-// or you can manually export the app instance
-// module.exports = { koaApp: app }
-// or just
-// module.exports = { app }
 
 ```
 
@@ -164,6 +151,8 @@ So you can keep your sensitive information away from the codes.
 
 ## Build script
 
-The leaf will run the build script(if declared) in the install stage.
 By defalut, leaf will take the scripts.build command if it is declared in the package.json.
 Or you can declare the command in leaf.json using field "build".
+Leaf will run the build script in docker in the install stage.
+
+If no build script is declared, leaf will run npm install for you and docker is not required for the deployment.

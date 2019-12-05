@@ -8,5 +8,6 @@ module.exports = {
         "no-restricted-syntax": 0,
         "max-len": ["error", { "code": 160 }],
         "arrow-parens": [2, "as-needed", { "requireForBlockBody": true }],
+        "object-curly-newline": 0,
     }
 }

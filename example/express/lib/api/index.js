@@ -6,5 +6,3 @@ app.all('', (req, res) => {
 })
 
 app.listen(8080, () => console.log('Server start'))
-
-module.exports = { expressApp: app }
