@@ -1,6 +1,6 @@
 {
   "name": "@linke/leaf",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A cli tool maked by (l)ink(e) to deploy serverless to (a)liyun (f)untion computing.",
   "main": "index.js",
   "bin": {
@@ -11,6 +11,7 @@
     "url": "https://github.com/linketech/leaf.git"
   },
   "scripts": {
+    "publish": "npm publish --access public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "vincent-ng",
