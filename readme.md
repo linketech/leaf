@@ -58,10 +58,10 @@ Make sure you have a package.json with correct dependencies declaration and pack
 
 ### for the frontend code
 
-if you need leaf building froentend code for you,
-use the ["build"](#build-script) option to declare commands for the code building.
-You can also build the code manually and just tell leaf where are the static files,
-using ["static"](#static) option.
+If you want leaf to build the frontend codes for you,
+use the ["build"](#build-script) option to declare these commands.
+You can also build the code manually,
+tell leaf the locations of the static files using ["static"](#static) option.
 
 Then run
 
@@ -90,9 +90,13 @@ docker stop $(docker ps -a -q)
 
 ## Config Options
 
-Config can declare in package.json or leaf.json.
+Config can be declared in package.json or leaf.json.
 
-When declare in package.json, please add the 'leaf' prefix. Just like
+The priority of the config options will be:
+
+fields in package.json < options naming "leafXXX" in package.json < options in leaf.json
+
+To declare in package.json, use the 'leaf' prefix:
 ```json
 {
 	"name": "example",
@@ -102,7 +106,7 @@ When declare in package.json, please add the 'leaf' prefix. Just like
 }
 ```
 
-Or declare in leaf.json without prefix
+To declare in leaf.json:
 ```json
 {
 	"name": "example",
@@ -111,6 +115,8 @@ Or declare in leaf.json without prefix
 	"env": {}
 }
 ```
+
+### Avalible Options
 
 | Field			| Desc										| Default						| Type		|
 | :-			| :-										| :-							| :-		|
