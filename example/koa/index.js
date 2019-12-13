@@ -9,6 +9,7 @@ require('request')
 const Koa = require('koa')
 const Router = require('koa-router')
 const koaBody = require('koa-body')
+const etag = require('koa-etag')
 
 const resolve = util.promisify(dns.resolve)
 
@@ -42,6 +43,7 @@ router.post('/', async (ctx) => {
 	ctx.body = indexHtml({ output })
 })
 
+app.use(etag())
 app.use(koaBody())
 app.use(router.routes())
 app.use(router.allowedMethods())

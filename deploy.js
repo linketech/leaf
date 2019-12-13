@@ -17,7 +17,7 @@ const checkFile = (filePath, isWhat) => fs.existsSync(filePath) && fs.statSync(f
 const tryToRequire = (filePath, defaultValue = null) => (checkFile(filePath, 'isFile') ? fs.readFileSync(filePath, { encoding: 'utf8' }) : defaultValue)
 const tryToRequireJson = jsonFilePath => JSON.parse(tryToRequire(jsonFilePath, '{}'))
 const jsonRequirer = srcPath => file => tryToRequireJson(path.join(srcPath, file))
-const pickAllWithValule = (fields, obj) => R.pickBy(v => !!v, R.pickAll(fields, obj))
+const pickAllWithValule = (fields, obj) => R.pickBy(v => v !== undefined, R.pickAll(fields, obj))
 
 const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	const srcList = globby.sync(globList, { ...opts, cwd: srcPath })
@@ -30,7 +30,7 @@ const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	})
 }
 
-const leafConfigFields = ['name', 'description', 'server', 'static', 'env']
+const leafConfigFields = ['name', 'description', 'server', 'static', 'env', 'build']
 
 // extract fields of name, desc, leafXXX
 function getLeafConfigFromPackageJson(packageJson) {
@@ -58,7 +58,8 @@ const getConfig = () => {
 	const ignoreList = tryToRequire(path.join(srcPath, '.leafignore'), '').split(/\r?\n/).filter(e => !!e)
 
 	// read package.json and leaf.json and merge
-	const packageJson4LeafConfig = getLeafConfigFromPackageJson(requireJson('package.json'))
+	const packageJson = requireJson('package.json')
+	const packageJson4LeafConfig = getLeafConfigFromPackageJson(packageJson)
 	const leafJson = requireJson('leaf.json')
 	const config = {
 		// default value
@@ -67,7 +68,7 @@ const getConfig = () => {
 		server: '.',
 		static: [],
 		env: {},
-		build: R.pathOr('', ['scripts', 'build'], packageJson4LeafConfig),
+		build: R.pathOr('', ['scripts', 'build'], packageJson),
 		// overwrite
 		...pickAllWithValule(leafConfigFields, packageJson4LeafConfig),
 		...pickAllWithValule(leafConfigFields, leafJson),
@@ -82,7 +83,7 @@ const getConfig = () => {
 		throw new Error(`package.json not found in ${config.server}. Please check the leaf config of "server".`)
 	}
 	const additionDependencies = {
-		'@webserverless/fc-express': '^0.1.1',
+		'raw-body': '^2.4.1',
 		'koa-static': '^5.0.0',
 		'serve-static': '^1.14.1',
 	}
@@ -161,6 +162,11 @@ try {
 	// generate config
 	console.debug('generating config files')
 	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
+	if (!program.debug) {
+		// 本地运行的时候不知为何访问静态资源文件会触发文件改动，导致容器hot reload引起出错。
+		// 这里加入.funignore忽略所有文件，忽略文件改动。deploy到云端不受影响
+		copyAllTo(path.join(__dirname, 'template.prod'), config.dstPath, ['**/*'], { dot: true })
+	}
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))

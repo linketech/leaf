@@ -58,10 +58,10 @@ Make sure you have a package.json with correct dependencies declaration and pack
 
 ### for the frontend code
 
-if you need leaf to run the commands for you,
-use the "build" option to declare commands for the code building.
+if you need leaf building froentend code for you,
+use the ["build"](#build-script) option to declare commands for the code building.
 You can also build the code manually and just tell leaf where are the static files,
-using "static" option.
+using ["static"](#static) option.
 
 Then run
 
@@ -130,7 +130,7 @@ tell leaf the code path using field "server"
 
 ## Serving static file
 
-Declare folders for static files.
+Using the "static" configuration option, you can specify some directories to make leaf serve these static resource files. Leaf will look for these requested files in the order of the directory array.
 
 ## Environment Variables
 
