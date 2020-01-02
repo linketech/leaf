@@ -26,6 +26,7 @@ const rawCreateServer = http.createServer
 http.createServer = (...args) => {
 	// eslint-disable-next-line prefer-destructuring
 	httpListener = args[0]
+	// console.log(config)
 	if (httpListener.listen instanceof Function) {
 		console.log('using express app instance')
 		app = httpListener
@@ -40,6 +41,7 @@ http.createServer = (...args) => {
 	return rawCreateServer(...args)
 }
 
+process.chdir('src')
 // eslint-disable-next-line import/no-unresolved
 require('.')
 

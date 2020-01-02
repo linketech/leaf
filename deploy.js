@@ -63,7 +63,7 @@ const getConfig = () => {
 	const leafJson = requireJson('leaf.json')
 	const config = {
 		// default value
-		name: path.basename(dir || __dirname),
+		name: path.basename(dir || process.cwd()),
 		description: '',
 		server: '.',
 		static: [],
@@ -74,13 +74,19 @@ const getConfig = () => {
 		...pickAllWithValule(leafConfigFields, leafJson),
 		// fields can not be overwrited
 		srcPath,
-		dstPath: path.join(srcPath, 'temp'),
+		dstPath: path.join(srcPath, '_temp'),
+		dstCodePath: path.join(srcPath, '_temp', 'src'),
 		ignoreList,
 	}
 	// read server package.json
-	const packageJson4Server = requireJson(path.join(config.server, 'package.json'))
+	let packageJson4Server = requireJson(path.join(config.server, 'package.json'))
 	if (R.isEmpty(packageJson4Server)) {
-		throw new Error(`package.json not found in ${config.server}. Please check the leaf config of "server".`)
+		// throw new Error(`package.json not found in ${config.server}. Please check the leaf config of "server".`)
+		config.static = ['.']
+		packageJson4Server = {
+			main: '../_static-http-server.js',
+			dependencies: { koa: '^2.11.0' },
+		}
 	}
 	const additionDependencies = {
 		'raw-body': '^2.4.1',
@@ -88,23 +94,22 @@ const getConfig = () => {
 		'serve-static': '^1.14.1',
 	}
 	packageJson4Server.dependencies = Object.assign(packageJson4Server.dependencies || {}, additionDependencies)
-	const staticOnly = !packageJson4Server.main
-	if (!staticOnly) {
-		packageJson4Server.main = path.join(config.server, packageJson4Server.main).replace(/\\/g, '/')
+	if (packageJson4Server.main) {
+		packageJson4Server.main = path.join(config.server, 'src', packageJson4Server.main).replace(/\\/g, '/')
 	}
 
 	// package.json for generate
 	config.packageJson = packageJson4Server
 
 	// static
-	config.static = config.static || (staticOnly ? ['.'] : [])
+	config.static = config.static || []
 
 	// env
 	Object.entries(config.env).forEach(([key, value]) => { config.env[key] = value === null && process.env[key] ? process.env[key] : value })
 
 	// fc
 	config.functionName = config.name.split(/[^\w]+/g).join('-')
-	config.domain = `${config.functionName}.leaf.dbjtech.com`
+	config.domain = `${config.functionName}.leaf.linketech.cn`
 	return config
 }
 
@@ -155,16 +160,12 @@ const templateFunfile = `
 `.replace(/\n\t/g, '\n')
 
 try {
-	// copy src files
-	console.debug('copying file to', config.dstPath)
-	copyAllTo(config.srcPath, config.dstPath, ['**/*', '!**/node_modules', '!temp'], { ignore: config.ignoreList })
-
 	// generate config
 	console.debug('generating config files')
 	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
 	if (!program.debug) {
 		// 本地运行的时候不知为何访问静态资源文件会触发文件改动，导致容器hot reload引起出错。
-		// 这里加入.funignore忽略所有文件，忽略文件改动。deploy到云端不受影响
+		// 这里让.funignore忽略所有文件，忽略文件改动。deploy到云端不受影响
 		copyAllTo(path.join(__dirname, 'template.prod'), config.dstPath, ['**/*'], { dot: true })
 	}
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
@@ -174,6 +175,10 @@ try {
 	if (config.build) {
 		fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
 	}
+
+	// copy src files
+	console.debug('copying file to', config.dstCodePath)
+	copyAllTo(config.srcPath, config.dstCodePath, ['**/*', '!**/node_modules', '!_temp'], { ignore: config.ignoreList })
 
 	// local deploy
 	console.debug('building')

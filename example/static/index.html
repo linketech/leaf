@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.2/dist/css/bootstrap.min.css">
+</head>
+<body style="color: gray; font-size: 1.2em;">
+	<div class="container" style="margin:50px auto;">
+		<div class="row" style="font-family: Segoe UI Emoji; font-size: 3.5em; color: transparent; text-shadow: 0 0 0 lightblue;">
+			<span style="margin: 30px auto;">🚧 True DNS</span>
+		</div>
+		<form action="." method="POST" class="form">
+			<div class="form-group">
+				<div class="input-group">
+					<input type="text" name="uri" placeholder="A Blocked URL" class="form-control">
+					<div class="input-group-append">
+						<input type="submit" value="Submit" class="btn btn-primary">
+					</div>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="ta">To unblock the url, append the following IP(s) to your host file.</label>
+				<textarea class="form-control" id="ta" rows="10"><%=output%></textarea>
+			</div>
+		</form>
+	</div>
+</body>
+</html>
