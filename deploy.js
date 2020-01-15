@@ -185,16 +185,16 @@ async function main() {
 	console.debug('building')
 	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
 	if (config.build) {
-		cp.execSync('npx fun install', funOpts)
+		cp.execSync('npx @alicloud/fun install', funOpts)
 	} else {
 		cp.execSync('npm install --production --registry https://registry.npm.taobao.org', funOpts)
 	}
 
 	await ensureFCCustomDomains(config.domain)
 	if (program.debug) {
-		cp.execSync(`npx fun local start ${config.domain}`, funOpts)
+		cp.execSync(`npx @alicloud/fun local start ${config.domain}`, funOpts)
 	} else {
-		cp.execSync('npx fun deploy', funOpts)
+		cp.execSync('npx @alicloud/fun deploy', funOpts)
 		fs.removeSync(config.dstPath)
 	}
 }
