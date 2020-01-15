@@ -126,6 +126,7 @@ To declare in leaf.json:
 | static		| the static folders to be served			| no files are served			| Array		|
 | env			| declare the environment variables			|								| Map		|
 | build			| run build commands in the install stage	| scripts.build of package.json	| String	|
+| domain		| the domain to deploy						| {name}.leaf.linketech.cn		| String	|
 |				|											|								|			|
 
 ## Server Code Path
@@ -162,3 +163,10 @@ Or you can declare the command in leaf.json using field "build".
 Leaf will run the build script in docker in the install stage.
 
 If no build script is declared, leaf will run npm install for you and docker is not required for the deployment.
+
+## Domain
+
+Specify your domain of the serverless. Make sure your access key has the appropriate permissions
+for managing the dns and function compute apis of your alicloud accound.
+
+TODO: docs for domain using cdn

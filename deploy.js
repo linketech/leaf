@@ -31,7 +31,7 @@ const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	})
 }
 
-const leafConfigFields = ['name', 'description', 'server', 'static', 'env', 'build']
+const leafConfigFields = ['name', 'description', 'server', 'domain', 'static', 'env', 'build']
 
 // extract fields of name, desc, leafXXX
 function getLeafConfigFromPackageJson(packageJson) {
@@ -75,8 +75,8 @@ const getConfig = () => {
 		...pickAllWithValule(leafConfigFields, leafJson),
 		// fields can not be overwrited
 		srcPath,
-		dstPath: path.join(srcPath, '_temp'),
-		dstCodePath: path.join(srcPath, '_temp', 'src'),
+		dstPath: path.join(srcPath, '.leaf'),
+		dstCodePath: path.join(srcPath, '.leaf', 'src'),
 		ignoreList,
 	}
 	// read server package.json
@@ -110,7 +110,7 @@ const getConfig = () => {
 
 	// fc
 	config.functionName = config.name.split(/[^\w]+/g).join('-')
-	config.domain = `${config.functionName}.leaf.linketech.cn`
+	config.domain = config.domain || `${config.functionName}.leaf.linketech.cn`
 	return config
 }
 
@@ -179,7 +179,7 @@ async function main() {
 
 	// copy src files
 	console.debug('copying file to', config.dstCodePath)
-	copyAllTo(config.srcPath, config.dstCodePath, ['**/*', '!**/node_modules', '!_temp'], { ignore: config.ignoreList })
+	copyAllTo(config.srcPath, config.dstCodePath, ['**/*', '!**/node_modules', '!.leaf'], { ignore: config.ignoreList })
 
 	// local deploy
 	console.debug('building')

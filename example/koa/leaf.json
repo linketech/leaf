@@ -1,3 +1,4 @@
 {
+	"domain": "koa.leaf.dbjtech.com",
 	"static": ["static"]
 }
