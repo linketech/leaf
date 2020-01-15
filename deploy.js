@@ -6,6 +6,7 @@ const { Command } = require('commander')
 const R = require('ramda')
 const yaml = require('js-yaml')
 const globby = require('globby')
+const { ensureFCCustomDomains } = require('./lib/alicloud')
 
 const program = new Command()
 
@@ -159,7 +160,7 @@ const templateFunfile = `
 	${config.build ? 'RUN npm run build' : ''}
 `.replace(/\n\t/g, '\n')
 
-try {
+async function main() {
 	// generate config
 	console.debug('generating config files')
 	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
@@ -188,13 +189,17 @@ try {
 	} else {
 		cp.execSync('npm install --production --registry https://registry.npm.taobao.org', funOpts)
 	}
+
+	await ensureFCCustomDomains(config.domain)
 	if (program.debug) {
 		cp.execSync(`npx fun local start ${config.domain}`, funOpts)
 	} else {
 		cp.execSync('npx fun deploy', funOpts)
 		fs.removeSync(config.dstPath)
 	}
-} catch (e) {
+}
+
+main().catch((e) => {
 	console.error(e.message)
 	console.debug(e.stack)
-}
+})
