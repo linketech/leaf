@@ -170,3 +170,7 @@ Specify your domain of the serverless. Make sure your access key has the appropr
 for managing the dns and function compute apis of your alicloud accound.
 
 TODO: docs for domain using cdn
+
+## Log
+
+Logs can be found in log service of alicloud console.

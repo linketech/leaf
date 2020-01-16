@@ -19,6 +19,7 @@ const tryToRequire = (filePath, defaultValue = null) => (checkFile(filePath, 'is
 const tryToRequireJson = jsonFilePath => JSON.parse(tryToRequire(jsonFilePath, '{}'))
 const jsonRequirer = srcPath => file => tryToRequireJson(path.join(srcPath, file))
 const pickAllWithValule = (fields, obj) => R.pickBy(v => v !== undefined, R.pickAll(fields, obj))
+const format = string => string.replace(/\./g, '-')
 
 const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	const srcList = globby.sync(globList, { ...opts, cwd: srcPath })
@@ -124,7 +125,13 @@ const templateYML = {
 	Resources: {
 		leaf: {
 			Type: 'Aliyun::Serverless::Service',
-			Properties: { Description: config.description },
+			Properties: {
+				Description: config.description,
+				LogConfig: {
+					Project: format(`log-project.${config.domain}`),
+					Logstore: format(`log-store.${config.domain}`),
+				},
+			},
 			[config.functionName]: {
 				Type: 'Aliyun::Serverless::Function',
 				Properties: {
@@ -148,6 +155,19 @@ const templateYML = {
 			Properties: {
 				Protocol: 'HTTP',
 				RouteConfig: { routes: { '/*': { ServiceName: 'leaf', FunctionName: config.functionName } } },
+			},
+		},
+		[format(`log-project.${config.domain}`)]: {
+			Type: 'Aliyun::Serverless::Log',
+			Properties: {
+				Description: `log project for ${config.domain}`,
+			},
+			[format(`log-store.${config.domain}`)]: {
+				Type: 'Aliyun::Serverless::Log::Logstore',
+				Properties: {
+					TTL: 30,
+					ShardCount: 1,
+				},
 			},
 		},
 	},
@@ -196,6 +216,7 @@ async function main() {
 	} else {
 		cp.execSync('npx @alicloud/fun deploy', funOpts)
 		fs.removeSync(config.dstPath)
+		console.log(`https://${config.domain} deploy success.`)
 	}
 }
 
