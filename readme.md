@@ -173,4 +173,6 @@ TODO: docs for domain using cdn
 
 ## Log
 
-Logs can be found in log service of alicloud console.
+When the code is deployed, use "leaf logs" to fetech the logs.
+Use "leaf logs --help" for more infomations.
+Alternatively, the logs can be found in logstore of alicloud console.

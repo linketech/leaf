@@ -10,5 +10,6 @@ program
 program
 	.command('deploy [path]', 'Performs a deployment', { isDefault: true, executableFile: path.join(__dirname, 'deploy.js') })
 	.command('config', 'Config leaf', { executableFile: path.join(__dirname, 'config.js') })
+	.command('logs', 'Get the serverless logs', { executableFile: path.join(__dirname, 'logs.js') })
 
 program.parse(process.argv)

@@ -20,6 +20,7 @@
     "@alicloud/fc2": "^2.2.0",
     "@alicloud/fun": "^3.4.0",
     "@alicloud/pop-core": "^1.7.9",
+    "aliyun-sdk": "^1.12.3",
     "commander": "^4.0.1",
     "fs-extra": "^8.1.0",
     "globby": "^10.0.1",
