@@ -1,6 +1,6 @@
 {
   "name": "@linke/leaf",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A cli tool maked by (l)ink(e) to deploy serverless to (a)liyun (f)untion computing.",
   "main": "index.js",
   "bin": {
@@ -25,6 +25,7 @@
     "fs-extra": "^8.1.0",
     "globby": "^10.0.1",
     "js-yaml": "^3.13.1",
+    "moment": "^2.24.0",
     "ramda": "^0.26.1"
   },
   "devDependencies": {

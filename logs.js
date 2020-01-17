@@ -1,4 +1,5 @@
 const { promisify } = require('util')
+const moment = require('moment')
 const { Command } = require('commander')
 const R = require('ramda')
 const ALY = require('aliyun-sdk')
@@ -57,8 +58,20 @@ async function tailLogs() {
 	const start = end - (TTL * 24 * 3600)
 	let count = Number(program.tail)
 	let offset = 0
+	const formatedMap = {}
 	const toPlainText = R.pipe(
-		R.filter(e => program.verbose || !Number.isNaN(new Date(e.split(' ')[0]).valueOf())),
+		R.forEach((e) => {
+			const splits = e.split(/\s+/g)
+			const timestamp = new Date(splits.shift()).valueOf()
+			const isConsoleLog = !Number.isNaN(timestamp)
+			if (isConsoleLog) {
+				const requestIdShort = splits.shift().split('-').pop()
+				const logLevel = splits.shift()[1].toUpperCase()
+				formatedMap[e] = `[${logLevel} ${moment(timestamp).format('YYMMDD HH:mm:ss Z')}] [${requestIdShort}] ${splits.join(' ')}`
+			}
+		}),
+		R.filter(e => program.verbose || formatedMap[e]),
+		R.map(e => formatedMap[e] || e),
 		// eslint-disable-next-line no-plusplus
 		R.filter(() => (count--) > 0),
 		R.join('\n'),
