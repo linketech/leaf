@@ -42,7 +42,7 @@ async function getLogs(from, to, offset) {
 		// topic: '', // 指定日志主题(用户所有主题可以通过listTopics获得)
 		reverse: true, // 是否反向读取,只能为 true 或者 false,不区分大小写(默认 false,为正向读取,即从 from 开始到 to 之间读取 Line 条)
 		query: program.query, // 查询的关键词,不输入关键词,则查询全部日志数据
-		line: 3, // 读取的行数,默认值为 100,取值范围为 0-100
+		line: 100, // 读取的行数,默认值为 100,取值范围为 0-100
 		offset, // 读取起始位置,默认值为 0,取值范围>0
 	})
 
