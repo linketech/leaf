@@ -49,8 +49,8 @@ const templateYML = {
 					Handler: '_index.handler',
 					Runtime,
 					CodeUri: './',
-					MemorySize: 256,
-					Timeout: 60,
+					MemorySize: config.serverless.memory,
+					Timeout: config.serverless.timeout,
 					EnvironmentVariables: config.env,
 				},
 				Events: {
@@ -76,7 +76,7 @@ const templateYML = {
 			[config.logStoreName]: {
 				Type: 'Aliyun::Serverless::Log::Logstore',
 				Properties: {
-					TTL: 30,
+					TTL: config.serverless.logTTL,
 					ShardCount: 1,
 				},
 			},

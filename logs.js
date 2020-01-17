@@ -6,8 +6,6 @@ const ALY = require('aliyun-sdk')
 const { getProfileFromFile } = require('@alicloud/fun/lib/profile')
 const { getConfig } = require('./lib/config-loader')
 
-const TTL = 30
-
 const program = new Command()
 
 program
@@ -55,7 +53,7 @@ async function getLogs(from, to, offset) {
 
 async function tailLogs() {
 	const end = Math.floor(Date.now() / 1000)
-	const start = end - (TTL * 24 * 3600)
+	const start = end - (leafConfig.serverless.logTTL * 24 * 3600)
 	let count = Number(program.tail)
 	let offset = 0
 	const formatedMap = {}

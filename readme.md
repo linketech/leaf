@@ -127,6 +127,7 @@ To declare in leaf.json:
 | env			| declare the environment variables			|								| Map		|
 | build			| run build commands in the install stage	| scripts.build of package.json	| String	|
 | domain		| the domain to deploy						| {name}.leaf.linketech.cn		| String	|
+| serverless	| config of the function compute			| ref to the doc				| Object	|
 |				|											|								|			|
 
 ## Server Code Path
@@ -171,7 +172,25 @@ for managing the dns and function compute apis of your alicloud accound.
 
 TODO: docs for domain using cdn
 
-## Log
+## Serverless
+
+### memory
+
+Use the serverless.memory property to tell how many memories(MB) is reserved for the serverless.
+
+Default value is 256 MB.
+
+### timeout
+
+Use the serverless.timeout property to specify the runtime timeout(s) of the serverless.
+
+Default value is 60 seconds.
+
+### logTTL
+
+Use the serverless.logTTL property to tell how many days the logstore to keep the logs.
+
+Default value is 180 days.
 
 When the code is deployed, use "leaf logs" to fetech the logs.
 Use "leaf logs --help" for more infomations.
