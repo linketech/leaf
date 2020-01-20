@@ -1,4 +1,4 @@
-/* eslint-disable import/no-unresolved */
+/* eslint-disable import/no-unresolved, import/no-extraneous-dependencies */
 const http = require('http')
 const serveKoa = require('koa-static')
 const serveExpress = require('serve-static')

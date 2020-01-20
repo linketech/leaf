@@ -1,4 +1,4 @@
-/* eslint-disable import/no-unresolved */
+/* eslint-disable import/no-unresolved, import/no-extraneous-dependencies */
 const url = require('url')
 const http = require('http')
 const getRawBody = require('raw-body')

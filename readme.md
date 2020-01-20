@@ -195,3 +195,17 @@ Default value is 180 days.
 When the code is deployed, use "leaf logs" to fetech the logs.
 Use "leaf logs --help" for more infomations.
 Alternatively, the logs can be found in logstore of alicloud console.
+
+## Static Only
+
+Remove the package.json, if you just need to put some static files online without any backend code.
+In this case, an reserve env var PROXY_404_TO_ROOT can set to true, indicating any 404 resources will proxy to /,
+which is useful for SPA website.
+
+```json
+{
+	"env": {
+		"PROXY_404_TO_ROOT": true
+	}
+}
+```
