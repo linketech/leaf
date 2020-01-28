@@ -2,6 +2,7 @@
 const url = require('url')
 const http = require('http')
 const getRawBody = require('raw-body')
+const etag = require('etag')
 
 class Bridge {
 	constructor(httpListener) {
@@ -31,10 +32,24 @@ class Bridge {
 					return
 				}
 				const { statusCode, headers } = response
-
+				let theStatusCode = statusCode
+				let theBody = body
 				Object.entries(headers).forEach(([k, v]) => ctx.response.setHeader(k, v))
-				ctx.response.setStatusCode(statusCode)
-				ctx.response.send(body)
+				if (ctx.request.method === 'GET' && statusCode === 200) {
+					// reset headers and body
+					if (!ctx.response.headers['cache-control']) {
+						ctx.response.setHeader('cache-control', 'no-cache')
+					}
+					if (!ctx.response.headers.etag) {
+						const hash = etag(body)
+						ctx.response.setHeader('etag', hash)
+					} else if (ctx.request.headers['if-none-match'] === ctx.response.headers.etag) {
+						theStatusCode = 304
+						theBody = ''
+					}
+				}
+				ctx.response.setStatusCode(theStatusCode)
+				ctx.response.send(theBody)
 			})
 		})
 		req.on('error', error => error && reject(error))

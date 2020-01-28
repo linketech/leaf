@@ -27,14 +27,15 @@ http.createServer = (...args) => {
 	// eslint-disable-next-line prefer-destructuring
 	httpListener = args[0]
 	// console.log(config)
+	const maxAge = (process.env.STATIC_FILES_MAX_AGE || 0) * 1000
 	if (httpListener.listen instanceof Function) {
 		console.log('using express app instance')
 		app = httpListener
-		config.static.forEach(e => app.use(serveExpress(e)))
+		config.static.forEach(e => app.use(serveExpress(e, { maxAge })))
 	} else if (httpListener instanceof Function && httpListener.that) {
 		console.log('using koa app instance')
 		app = httpListener.that
-		config.static.reverse().forEach(e => app.middleware.unshift(serveKoa(e)))
+		config.static.reverse().forEach(e => app.middleware.unshift(serveKoa(e, { maxage: maxAge })))
 	} else {
 		throw new Error('unknow object of http.createServer')
 	}

@@ -1,0 +1,6 @@
+{
+	"env": {
+		"PROXY_404_TO_ROOT": true,
+		"STATIC_FILES_MAX_AGE": 10
+	}
+}
