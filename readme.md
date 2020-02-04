@@ -127,7 +127,7 @@ To declare in leaf.json:
 | env			| declare the environment variables			|								| Map		|
 | build			| run build commands in the install stage	| scripts.build of package.json	| String	|
 | domain		| the domain to deploy						| {name}.leaf.linketech.cn		| String	|
-| serverless	| config of the function compute			| ref to the doc				| Object	|
+| serverless	| config of the function compute			| ref to the doc				| Map		|
 |				|											|								|			|
 
 ## Server Code Path
