@@ -34,7 +34,7 @@ const templateYML = {
 	ROSTemplateFormatVersion: '2015-09-01',
 	Transform: 'Aliyun::Serverless-2018-04-03',
 	Resources: {
-		leaf: {
+		[config.serviceName]: {
 			Type: 'Aliyun::Serverless::Service',
 			Properties: {
 				Description: config.description,
@@ -65,7 +65,7 @@ const templateYML = {
 			Type: 'Aliyun::Serverless::CustomDomain',
 			Properties: {
 				Protocol: 'HTTP',
-				RouteConfig: { routes: { '/*': { ServiceName: 'leaf', FunctionName: config.functionName } } },
+				RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.functionName } } },
 			},
 		},
 		[config.logProjectName]: {
@@ -125,7 +125,7 @@ async function main() {
 	if (program.debug) {
 		cp.execSync(`npx @alicloud/fun local start ${config.domain}`, funOpts)
 	} else {
-		cp.execSync('npx @alicloud/fun deploy', funOpts)
+		cp.execSync('npx @alicloud/fun deploy -y', funOpts)
 		fs.removeSync(config.dstPath)
 		console.log(`https://${config.domain} deploy success.`)
 	}
