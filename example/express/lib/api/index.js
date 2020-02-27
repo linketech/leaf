@@ -3,7 +3,9 @@ const express = require('express')
 const app = express()
 
 app.all('/time', (req, res) => {
-	res.send(`Time is now: ${new Date()}`)
+	const rs = `Time is now: ${new Date()}`
+	console.log('req /time', rs)
+	res.send(rs)
 })
 
 app.all('', (req, res) => {

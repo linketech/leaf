@@ -11,6 +11,7 @@ const program = new Command()
 program
 	.option('-t, --tail <lineCount>', 'line count of logs', 100)
 	.option('-q, --query <expression>', 'a query expression for searching the logstore', '')
+	.option('-r, --reverse', 'print logs in desc order, which is faster than the default asc order', false)
 	.option('-v, --verbose', 'display the full logs of serverless')
 	.parse(process.argv)
 
@@ -71,21 +72,28 @@ async function tailLogs() {
 		R.filter(e => program.verbose || formatedMap[e]),
 		R.map(e => formatedMap[e] || e),
 		// eslint-disable-next-line no-plusplus
-		R.filter(() => (count--) > 0),
-		R.join('\n'),
+		R.filter(() => count-- > 0),
 	)
+	let allLogs = []
 	while (count > 0) {
 		// eslint-disable-next-line no-await-in-loop
 		const rs = await getLogs(start, end, offset)
 		// console.debug(rs)
 		const logs = toPlainText(rs)
-		if (logs) {
-			console.log(logs)
+		if (logs.length) {
+			if (program.reverse) {
+				console.log(logs.join('\n'))
+			} else {
+				allLogs = allLogs.concat(logs)
+			}
 		}
 		offset += rs.length
 		if (!rs.length) {
 			break
 		}
+	}
+	if (!program.reverse) {
+		allLogs.reverse().forEach(e => console.log(e))
 	}
 }
 
