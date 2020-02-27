@@ -9,13 +9,14 @@ const { getConfig } = require('./lib/config-loader')
 const program = new Command()
 
 program
+	.usage('[name]')
 	.option('-t, --tail <lineCount>', 'line count of logs', 100)
 	.option('-q, --query <expression>', 'a query expression for searching the logstore', '')
 	.option('-r, --reverse', 'print logs in desc order, which is faster than the default asc order', false)
 	.option('-v, --verbose', 'display the full logs of serverless')
 	.parse(process.argv)
 
-const leafConfig = getConfig(program.args[0])
+const leafConfig = getConfig(program.args[0], false)
 
 async function ensureAlicloud() {
 	const config = await getProfileFromFile()
