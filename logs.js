@@ -10,7 +10,7 @@ const program = new Command()
 
 program
 	.usage('[name]')
-	.option('-t, --tail <lineCount>', 'line count of logs', 100)
+	.option('-t, --tail <lineCount>', 'line count of logs', 50)
 	.option('-q, --query <expression>', 'a query expression for searching the logstore', '')
 	.option('-r, --reverse', 'print logs in desc order, which is faster than the default asc order', false)
 	.option('-v, --verbose', 'display the full logs of serverless')
