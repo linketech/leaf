@@ -1,9 +1,12 @@
 /* eslint-disable import/no-unresolved, import/no-extraneous-dependencies */
+const { promisify } = require('util')
 const http = require('http')
 const serveKoa = require('koa-static')
 const serveExpress = require('serve-static')
-const { Bridge } = require('./_bridge')
+const { Bridge, ensureBody } = require('./_bridge')
 const config = require('./leaf.json')
+
+const sleep = promisify(setTimeout)
 
 try {
 	// eslint-disable-next-line global-require
@@ -49,21 +52,39 @@ require('.')
 
 let bridge
 function createProxyServer() {
+	if (bridge) {
+		return
+	}
+	if (!app) {
+		console.log('express/koa is not listening yet')
+		setTimeout(createProxyServer, 2000)
+		return
+	}
 	http.createServer = rawCreateServer
 	bridge = new Bridge(httpListener)
 }
 
-if (!app) {
-	setTimeout(() => {
-		if (!app) {
-			throw new Error('express/koa not found')
-		}
-		createProxyServer()
-	}, 2000)
-} else {
-	createProxyServer()
+createProxyServer()
+
+async function handler(request, response, context) {
+	await ensureBody(request) // todo: can't getBody after sleep
+
+	const expired = Date.now() + 30000
+	while (!bridge && Date.now() < expired) {
+		console.log('server is not ready')
+		// eslint-disable-next-line no-await-in-loop
+		await sleep(2000)
+	}
+
+	if (!bridge) {
+		console.log('return server is not ready')
+		response.send('server is not ready')
+	} else {
+		// console.log('server is ready')
+		await bridge.handle({ request, response, context })
+	}
 }
 
 module.exports.handler = (request, response, context) => {
-	bridge.handle({ request, response, context })
+	handler(request, response, context).catch(e => response.send(e))
 }

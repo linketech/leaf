@@ -12,7 +12,8 @@ const { ensureFCCustomDomains } = require('./lib/alicloud')
 const program = new Command()
 
 program
-	.option('-d, --debug', 'deploy and start locally. Docker is required.')
+	.option('-d, --debug', 'Deploy and start locally. Docker is required.')
+	.option('-b, --build', 'Use docker to install deps.')
 	.parse(process.argv)
 
 const copyAllTo = (srcPath, dstPath, globList, opts) => {
@@ -52,6 +53,7 @@ const templateYML = {
 					MemorySize: config.serverless.memory,
 					Timeout: config.serverless.timeout,
 					EnvironmentVariables: config.env,
+					InstanceConcurrency: 100,
 				},
 				Events: {
 					httpTrigger: {
@@ -84,11 +86,11 @@ const templateYML = {
 	},
 }
 
-const templateFunfile = `
-	RUNTIME ${Runtime}
+const templateDockerfile = `
+	FROM aliyunfc/runtime-nodejs10:build
 	COPY ./package.json .
-	RUN npm install --production --registry https://registry.npm.taobao.org
-	${config.build ? 'RUN npm run build' : ''}
+	RUN npx tyarn install --production
+	${config.build ? `RUN ${config.build}` : ''}
 `.replace(/\n\t/g, '\n')
 
 async function main() {
@@ -104,21 +106,25 @@ async function main() {
 	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 
-	if (config.build) {
-		fs.writeFileSync(path.join(config.dstPath, 'Funfile'), templateFunfile)
+	if (program.build) {
+		fs.writeFileSync(path.join(config.dstPath, 'Dockerfile'), templateDockerfile)
 	}
 
 	// copy src files
 	console.debug('copying file to', config.dstCodePath)
-	copyAllTo(config.srcPath, config.dstCodePath, ['**/*', '!**/node_modules', '!.leaf'], { ignore: config.ignoreList })
+	copyAllTo(config.srcPath, config.dstCodePath, ['**/*', '!**/node_modules', '!.leaf'], { dot: true, ignore: config.ignoreList })
 
 	// local deploy
 	console.debug('building')
 	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
-	if (config.build) {
-		cp.execSync('npx @alicloud/fun install', funOpts)
+	if (program.build) {
+		const tag = `leaf-build-cache-${Date.now()}`
+		cp.execSync(`docker build . -t ${tag}`, funOpts)
+		cp.execSync(`docker create -it --name ${tag} ${tag} bash`, funOpts)
+		cp.execSync(`docker cp ${tag}:/code/node_modules .`, funOpts)
+		cp.execSync(`docker rm -f ${tag}`, funOpts)
 	} else {
-		cp.execSync('npm install --production --registry https://registry.npm.taobao.org', funOpts)
+		cp.execSync('npm install --production', funOpts)
 	}
 
 	await ensureFCCustomDomains(config.domain)

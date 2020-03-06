@@ -61,6 +61,10 @@ async function tailLogs() {
 	const formatedMap = {}
 	const toPlainText = R.pipe(
 		R.forEach((e) => {
+			if (e[0] === '[') {
+				formatedMap[e] = e
+				return
+			}
 			const splits = e.split(/\s+/g)
 			const timestamp = new Date(splits.shift()).valueOf()
 			const isConsoleLog = !Number.isNaN(timestamp)
