@@ -39,6 +39,8 @@ const templateYML = {
 			Type: 'Aliyun::Serverless::Service',
 			Properties: {
 				Description: config.description,
+				Policies: ['AliyunECSNetworkInterfaceManagementAccess'],
+				...(config.vpc ? { VpcConfig: config.vpc } : {}),
 				LogConfig: {
 					Project: config.logProjectName,
 					Logstore: config.logStoreName,
