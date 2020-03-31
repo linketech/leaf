@@ -6,6 +6,9 @@ const { Command } = require('commander')
 const R = require('ramda')
 const yaml = require('js-yaml')
 const globby = require('globby')
+const request = require('request')
+const progress = require('request-progress')
+const AdmZip = require('adm-zip')
 const { getConfig, leafConfigFields } = require('./lib/config-loader')
 const { ensureFCCustomDomains } = require('./lib/alicloud')
 
@@ -13,8 +16,28 @@ const program = new Command()
 
 program
 	.option('-d, --debug', 'Deploy and start locally. Docker is required.')
-	.option('-b, --build', 'Use docker to install deps.')
+	.option('--build-with <builder>', 'Use shell/docker/cloud to install deps.', 'shell')
 	.parse(process.argv)
+
+function downloadDeps(packageJson, pathName) {
+	return new Promise((resolve, reject) => {
+		const hash = packageJson.name
+		const baseUri = `https://repl.leaf.linketech.cn/${hash}`
+		const opts = {
+			method: 'POST',
+			url: `${baseUri}/npm/install`,
+			body: { packageJson },
+			json: true,
+		}
+		console.debug('Fetching node_modules from cloud', baseUri)
+		progress(request(opts), { throttle: 200 })
+			// eslint-disable-next-line max-len
+			.on('progress', s => process.stdout.write(`Download ${s.size.transferred}/${s.size.total} ${Number(s.percent * 100).toFixed(2)}%, Elapsed: ${s.time.elapsed}\r`))
+			.on('close', () => resolve(pathName) || console.log(`Saved to ${pathName}`))
+			.on('error', error => reject(error))
+			.pipe(fs.createWriteStream(pathName))
+	})
+}
 
 const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	const srcList = globby.sync(globList, { ...opts, cwd: srcPath })
@@ -108,10 +131,6 @@ async function main() {
 	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
 
-	if (program.build) {
-		fs.writeFileSync(path.join(config.dstPath, 'Dockerfile'), templateDockerfile)
-	}
-
 	// copy src files
 	console.debug('copying file to', config.dstCodePath)
 	copyAllTo(config.srcPath, config.dstCodePath, ['**/*', '!**/node_modules', '!.leaf'], { dot: true, ignore: config.ignoreList })
@@ -119,14 +138,22 @@ async function main() {
 	// local deploy
 	console.debug('building')
 	const funOpts = { cwd: config.dstPath, stdio: 'inherit' }
-	if (program.build) {
+	if (program.buildWith === 'docker') {
 		const tag = `leaf-build-cache-${Date.now()}`
+		fs.writeFileSync(path.join(config.dstPath, 'Dockerfile'), templateDockerfile)
 		cp.execSync(`docker build . -t ${tag}`, funOpts)
 		cp.execSync(`docker create -it --name ${tag} ${tag} bash`, funOpts)
 		cp.execSync(`docker cp ${tag}:/code/node_modules .`, funOpts)
 		cp.execSync(`docker rm -f ${tag}`, funOpts)
-	} else {
+	} else if (program.buildWith === 'shell') {
 		cp.execSync('npm install --production', funOpts)
+	} else if (program.buildWith === 'cloud') {
+		const depsFile = await downloadDeps(config.packageJson, path.join(config.dstPath, 'node_modules.zip'))
+		const zip = new AdmZip(depsFile)
+		// fs.removeSync(depsFile)
+		zip.extractAllTo(config.dstPath, true)
+	} else {
+		throw new Error(`Unknow build method: ${program.buildWith}`)
 	}
 
 	await ensureFCCustomDomains(config.domain)
@@ -140,6 +167,6 @@ async function main() {
 }
 
 main().catch((e) => {
-	console.error(e.message)
-	console.debug(e.stack)
+	console.error(e.message || e)
+	console.debug(e.stack || '')
 })

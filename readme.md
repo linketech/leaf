@@ -125,7 +125,7 @@ To declare in leaf.json:
 | server		| the backend code folder(has package.json)	| project dir					| String	|
 | static		| the static folders to be served			| no files are served			| Array		|
 | env			| declare the environment variables			|								| Map		|
-| build			| run build commands in the install stage	| scripts.build of package.json	| String	|
+| build			| run build commands in docker build stage	| scripts.build of package.json	| String	|
 | domain		| the domain to deploy						| {name}.leaf.linketech.cn		| String	|
 | serverless	| config of the function compute			| ref to the doc				| Map		|
 |				|											|								|			|
