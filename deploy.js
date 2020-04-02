@@ -30,10 +30,10 @@ function downloadDeps(packageJson, pathName) {
 			json: true,
 		}
 		console.debug('Fetching node_modules from cloud', baseUri)
-		progress(request(opts), { throttle: 200 })
+		progress(request(opts), { throttle: 100 })
 			// eslint-disable-next-line max-len
-			.on('progress', s => process.stdout.write(`Download ${s.size.transferred}/${s.size.total} ${Number(s.percent * 100).toFixed(2)}%, Elapsed: ${s.time.elapsed}\r`))
-			.on('close', () => resolve(pathName) || console.log(`Saved to ${pathName}`))
+			.on('progress', s => process.stdout.write(`Download ${s.size.transferred}/${s.size.total} ${Number(s.percent * 100).toFixed(2)}%, Elapsed: ${s.time.elapsed}${s.size.transferred === s.size.total ? '\n' : '\r'}`))
+			.on('close', () => resolve(pathName) || console.log(`Saved to ${pathName}`, '                    '))
 			.on('error', error => reject(error))
 			.pipe(fs.createWriteStream(pathName))
 	})

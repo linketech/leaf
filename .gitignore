@@ -2,3 +2,4 @@ node_modules
 .leaf
 example/linketech.cn
 example/dms
+example/repl

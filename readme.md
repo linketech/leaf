@@ -10,7 +10,7 @@ npm i @linke/leaf -g
 
 ## Config
 
-Tell leaf your aliyun account info.
+Tell leaf your alicloud account info.
 
 ```bash
 leaf config
@@ -20,9 +20,7 @@ leaf config
 
 ### for the backend code:
 
-You should let leaf knows your express/koa instance.
-
-Exports your express app object like this.
+You should let leaf knows your express/koa instance, by calling the listen method.
 Feel free to write other express logic.
 
 ```js
@@ -38,9 +36,6 @@ app.listen(8080, () => console.log('Server start'))
 ```
 
 Or
-
-Exports your koa app object like this.
-Feel free to write other koa logic.
 
 ```js
 const Koa = require('koa')
@@ -58,10 +53,13 @@ Make sure you have a package.json with correct dependencies declaration and pack
 
 ### for the frontend code
 
-If you want leaf to build the frontend codes for you,
+No config is needed for the common static html code.
+
+However, if you want leaf to build the frontend codes for you,
 use the ["build"](#build-script) option to declare these commands.
+
 You can also build the code manually,
-tell leaf the locations of the static files using ["static"](#static) option.
+just tell leaf the locations of the static files using ["static"](#static) option.
 
 Then run
 
@@ -128,6 +126,7 @@ To declare in leaf.json:
 | build			| run build commands in docker build stage	| scripts.build of package.json	| String	|
 | domain		| the domain to deploy						| {name}.leaf.linketech.cn		| String	|
 | serverless	| config of the function compute			| ref to the doc				| Map		|
+| vpc			| make program under the specified vpc		| no vpc						| Map		|
 |				|											|								|			|
 
 ## Server Code Path
@@ -157,60 +156,95 @@ Declare env variables with field "env".
 When env value is set to null, leaf will read the env vars value from current shell.
 So you can keep your sensitive information away from the codes.
 
-## Build script
+The follow reserve environment variables are used by leaf
+
+```js
+{
+	"env": {
+		// Remove the package.json if you need to put some static files online without any backend code.
+		// In this case, a reserve env var PROXY_404_TO_ROOT can be set to true,
+		// indicating any 404 resources will proxy to /,
+		// which is useful for SPA website.
+		"PROXY_404_TO_ROOT": true,
+
+		// add "cache-control: max-age=xxx" header to the served static files, default is 0
+		"STATIC_FILES_MAX_AGE": 3600
+	}
+}
+```
+
+## Build
+
+There are three methods for leaf to build your code: shell, docker, cloud.
+
+for example
+```bash
+leaf --build-with docker
+```
+
+### shell
+It's the default building method, leaf will use your current shell to run the npm install command, which is straightforward and fast.
+
+However, if your project dependencies have c/c++ addons,
+they will be failed to load in the alicloud fc enviroment.
+
+Then you will need docker or cloud build methods.
+
+### docker
+Run npm install in docker.
 
 By defalut, leaf will take the scripts.build command if it is declared in the package.json.
 Or you can declare the command in leaf.json using field "build".
-Leaf will run the build script in docker in the install stage.
+Leaf will run the build script in docker also.
 
-If no build script is declared, leaf will run npm install for you and docker is not required for the deployment.
+### cloud
+Upload the package.json to cloud and run npm install in the cloud, and then download it.
+
+This method is useful if your os do not has docker installed.
+Or your network enviroment is bad to access the npm server.
 
 ## Domain
 
 Specify your domain of the serverless. Make sure your access key has the appropriate permissions
 for managing the dns and function compute apis of your alicloud accound.
 
-TODO: docs for domain using cdn
+### CDN
+
+The following instructions are for user who want to deploy their fc code behind alicloud's CDN.
+1. nslookup to get the ip of alicloud fc server, exp: nslookup xxx.leaf.linketech.cn
+1. create a desired domain in cdn console, exp: *.leaf.linketech.cn
+1. point to the ip of alicloud fc server. (do not point to a specific fc directly)
+1. set dns of your desired domain, cname to the domain of the cdn server
 
 ## Serverless
 
-### memory
-
-Use the serverless.memory property to tell how many memories(MB) is reserved for the serverless.
-
-Default value is 256 MB.
-
-### timeout
-
-Use the serverless.timeout property to specify the runtime timeout(s) of the serverless.
-
-Default value is 60 seconds.
-
-### logTTL
-
-Use the serverless.logTTL property to tell how many days the logstore to keep the logs.
-
-Default value is 180 days.
-
-When the code is deployed, use "leaf logs" to fetech the logs.
-Use "leaf logs --help" for more infomations.
-
-Alternatively, the logs can be found in logstore of alicloud console.
-
-## Static Only
-
-Remove the package.json if you need to put some static files online without any backend code.
-In this case, a reserve env var PROXY_404_TO_ROOT can set to true, indicating any 404 resources will proxy to /,
-which is useful for SPA website.
-
-## Reserve Environment Variable
-```json
+```js
 {
-	"env": {
-		// redirect 404 request to /, default is false.
-		"PROXY_404_TO_ROOT": true,
-		// add "cache-control: max-age=xxx" header to the served static files, default is 0
-		"STATIC_FILES_MAX_AGE": 3600
+	"serverless": {
+		// how many memories(MB) is reserved for the serverless
+		"memory": 256,
+
+		// runtime timeout(s) of the serverless
+		"timeout": 60,
+
+		// How many days the logstore keeps the logs
+		// Use "leaf logs" to fetech the logs.
+		"logTTL": 180,
+	}
+}
+```
+
+## VPC
+
+If your code need to connect to other products in vpc of alicloud, for example: RDS, MQ or other ECS,
+a vpc config is should be set.
+
+```js
+{
+	"vpc": {
+		"VpcId": "vpc-xxx",
+		"VSwitchIds": ["vsw-xxx"],
+		"SecurityGroupId": "sg-xxx"
 	}
 }
 ```
