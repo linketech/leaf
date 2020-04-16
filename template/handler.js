@@ -1,7 +1,8 @@
 /* eslint-disable import/no-unresolved, import/no-extraneous-dependencies, global-require */
 const { promisify } = require('util')
 const http = require('http')
-const { Bridge, ensureBody } = require('./_bridge')
+const { Bridge, ensureBody } = require('./bridge')
+const { handleEvent } = require('./timer')
 const config = require('./leaf.json')
 
 const sleep = promisify(setTimeout)
@@ -62,7 +63,7 @@ function createProxyServer() {
 
 createProxyServer()
 
-async function handler(request, response, context) {
+async function httpHandler(request, response, context) {
 	await ensureBody(request) // todo: can't getBody after sleep
 
 	const expired = Date.now() + 30000
@@ -81,6 +82,18 @@ async function handler(request, response, context) {
 	}
 }
 
-module.exports.handler = (request, response, context) => {
-	handler(request, response, context).catch(e => response.send(e))
+module.exports.initializer = (context, callback) => {
+	console.log('initializer', JSON.stringify(context.function))
+	handleEvent('initializer', callback)
+}
+
+module.exports.httpHandler = (request, response, context) => {
+	httpHandler(request, response, context).catch(e => response.send(e))
+}
+
+module.exports.timerHandler = (event, context, callback) => {
+	const eventString = event.toString()
+	const e = JSON.parse(eventString)
+	console.log('timerHandler', eventString)
+	handleEvent(e.triggerName, callback)
 }

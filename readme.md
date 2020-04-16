@@ -126,6 +126,7 @@ To declare in leaf.json:
 | build			| run build commands in docker build stage	| scripts.build of package.json	| String	|
 | domain		| the domain to deploy						| {name}.leaf.linketech.cn		| String	|
 | serverless	| config of the function compute			| ref to the doc				| Map		|
+| timer			| event trigger of timers					| no timers						| Map		|
 | vpc			| make program under the specified vpc		| no vpc						| Map		|
 |				|											|								|			|
 
@@ -232,6 +233,58 @@ The following instructions are for user who want to deploy their fc code behind 
 		"logTTL": 180,
 	}
 }
+```
+
+## Timer
+
+Instances of serverless are not resident. Therefore, for the periodic repeated tasks, you should use timers.
+A timer is an event trigger indicated by cron expression. It MUST be an async function with a unique name.
+There are 4 code styles for declaring timers.
+
+```js
+
+const schedule = require('node-schedule')
+
+// style 1, using node-schedule, create a named job: handleEvent1.
+// And 'handleEvent1' will be the event name.
+schedule.scheduleJob('handleEvent1', '0 * * * * *', async () => {})
+
+// style 2, using node-schedule, create a unamed job with a named async function: handleEvent2.
+// And 'handleEvent2' will be the event name.
+const handleEvent2 = async () => {}
+schedule.scheduleJob('30 * * * * *', handleEvent2)
+
+// style 3, without node-schedule, emit a registerEvent on the process global object,
+// with a event name and an async function
+process.emit('registerEvent', 'handleEvent3', async () => {})
+
+// style 4, without node-schedule, emit a registerEvent on the process global object,
+// with an named async function: handleEvent4.
+// And 'handleEvent4' will be the event name.
+const handleEvent4 = async () => {}
+process.emit('registerEvent', handleEvent4)
+
+```
+
+Then declare the timer option in the config of leaf.
+```json
+{
+	"timer": {
+		"handleEvent1": "10 * * * * *",
+		"handleEvent2": "20 * * * * *",
+		"handleEvent3": "30 * * * * *",
+		"handleEvent4": "40 * * * * *",
+	},
+}
+```
+
+### initializer
+You can also use the registerEvent to declare an initializer which will be called when serverless instance starts.
+
+```js
+process.emit('registerEvent', 'initializer', async () => {
+	// some initialization job
+})
 ```
 
 ## VPC

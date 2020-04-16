@@ -69,14 +69,16 @@ const templateYML = {
 					Logstore: config.logStoreName,
 				},
 			},
-			[config.functionName]: {
+			[config.httpTriggerName]: {
 				Type: 'Aliyun::Serverless::Function',
 				Properties: {
-					Handler: '_index.handler',
+					Handler: 'handler.httpHandler',
+					Initializer: 'handler.initializer',
 					Runtime,
 					CodeUri: './',
 					MemorySize: config.serverless.memory,
 					Timeout: config.serverless.timeout,
+					InitializationTimeout: config.serverless.timeout,
 					EnvironmentVariables: config.env,
 					InstanceConcurrency: 100,
 				},
@@ -87,12 +89,34 @@ const templateYML = {
 					},
 				},
 			},
+			...(R.isEmpty(config.timer) ? {} : {
+				[config.timerTriggerName]: {
+					Type: 'Aliyun::Serverless::Function',
+					Properties: {
+						Handler: 'handler.timerHandler',
+						Initializer: 'handler.initializer',
+						Runtime,
+						CodeUri: './',
+						MemorySize: config.serverless.memory,
+						Timeout: config.serverless.timeout,
+						InitializationTimeout: config.serverless.timeout,
+						EnvironmentVariables: config.env,
+						InstanceConcurrency: 100,
+					},
+					Events: {
+						...R.mapObjIndexed((v, k) => ({
+							Type: 'Timer',
+							Properties: { Payload: k, CronExpression: v, Enable: true },
+						}), config.timer),
+					},
+				},
+			}),
 		},
 		[config.domain]: {
 			Type: 'Aliyun::Serverless::CustomDomain',
 			Properties: {
 				Protocol: 'HTTP',
-				RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.functionName } } },
+				RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
 			},
 		},
 		[config.logProjectName]: {

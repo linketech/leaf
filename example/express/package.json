@@ -9,7 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "node-schedule": "^1.3.2"
   },
   "leafEnv": {
     "MYSQL_USER": "root",
@@ -18,5 +19,11 @@
   "leafStatic": [
     "static",
     "static2"
-  ]
+  ],
+  "leafTimer": {
+    "updateEventTimestamp1": "10 * * * * *",
+    "updateEventTimestamp2": "20 * * * * *",
+    "updateEventTimestamp3": "30 * * * * *",
+    "updateEventTimestamp4": "40 * * * * *"
+  }
 }
