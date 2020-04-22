@@ -57,10 +57,12 @@ function registerEvent(p1, p2) {
 }
 
 function handleEvent(name, callback) {
-	const handled = process.emit(eventName(name), callback)
-	if (!handled) {
-		callback()
-	}
+	process.nextTick(() => {
+		const handled = process.emit(eventName(name), callback)
+		if (!handled) {
+			callback()
+		}
+	})
 }
 
 process.on('registerEvent', registerEvent)
