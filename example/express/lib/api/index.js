@@ -19,10 +19,10 @@ app.all('', (req, res) => {
 
 app.listen(8080, () => console.log('Server start'))
 
-process.emit('registerEvent', 'initializer', async () => { events[0] = Date.now() })
+process.emit('registerEvent', 'initializer', () => { events[0] = Date.now() })
 
 // style 1
-schedule.scheduleJob('updateEventTimestamp1', '* * * * *', async () => {
+schedule.scheduleJob('updateEventTimestamp1', '* * * * *', () => {
 	console.log('updateEventTimestamp1', events[1])
 	events[1] = Date.now()
 })
@@ -40,5 +40,10 @@ schedule.scheduleJob('30 * * * * *', updateEventTimestamp2)
 process.emit('registerEvent', 'updateEventTimestamp3', async () => { events[3] = Date.now() })
 
 // style 4
-const updateEventTimestamp4 = async () => { events[4] = Date.now() }
+const updateEventTimestamp4 = () => new Promise((resolve) => {
+	setTimeout(() => {
+		events[4] = Date.now()
+		resolve()
+	}, 5000)
+})
 process.emit('registerEvent', updateEventTimestamp4)

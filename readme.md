@@ -238,7 +238,8 @@ The following instructions are for user who want to deploy their fc code behind 
 ## Timer
 
 Instances of serverless are not resident. Therefore, for the periodic repeated tasks, you should use timers.
-A timer is an event trigger indicated by cron expression. It MUST be an async function with a unique name.
+A timer is an event trigger indicated by cron expression. 
+It MUST be a named function, and the name will become the fc event name.
 There are 4 code styles for declaring timers.
 
 ```js
@@ -278,6 +279,9 @@ Then declare the timer option in the config of leaf.
 }
 ```
 
+When multiple event is registered with a same name, leaf will run all the handlers parallelly and wait for them to finish until event timeout.
+
+
 ### initializer
 You can also use the registerEvent to declare an initializer which will be called when serverless instance starts.
 
@@ -286,6 +290,9 @@ process.emit('registerEvent', 'initializer', async () => {
 	// some initialization job
 })
 ```
+
+Similar to timer event, when multiple initializer is registered, leaf will run all the handlers parallelly and wait for them to finish until event timeout.
+
 
 ## VPC
 
