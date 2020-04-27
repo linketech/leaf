@@ -23,7 +23,7 @@ try {
 		}
 	}
 } catch (e) {
-	// console.log(e.message)
+	// console.debug(e.message)
 }
 
 function registerEvent(p1, p2) {
@@ -40,7 +40,7 @@ function registerEvent(p1, p2) {
 		throw new Error(`registerEvent handler of ${name} is not a function`)
 	}
 
-	console.log('registerEvent', name)
+	console.debug('registerEvent', name)
 	if (listeners[name]) {
 		listeners[name].push(handler)
 		return

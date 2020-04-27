@@ -4,7 +4,7 @@ const http = require('http')
 const getRawBody = require('raw-body')
 const etag = require('etag')
 
-const Port = 60080
+const ListeningPort = 60080
 
 function getRawBodyAsync(stream) {
 	return new Promise((resolve, reject) => {
@@ -37,7 +37,7 @@ async function handle(ctx) {
 			method: ctx.request.method,
 			path: url.format({ pathname: ctx.request.path, query: ctx.request.queries }),
 			headers: ctx.request.headers,
-			port: Port,
+			port: ListeningPort,
 			// socketPath: this.socketPath,
 		}
 		const response = await httpRequest(requestOptions, ctx.request.body)
@@ -73,7 +73,8 @@ class Bridge {
 	constructor(httpListener) {
 		this.rawServer = http.createServer(httpListener)
 		// this.socketPath = `/tmp/server-${Math.random().toString(36).substring(2, 15)}.sock`
-		this.rawServer.listen(Port)
+		console.log('bridge listen', ListeningPort)
+		this.rawServer.listen(ListeningPort)
 	}
 
 	// eslint-disable-next-line class-methods-use-this
@@ -82,4 +83,4 @@ class Bridge {
 	}
 }
 
-module.exports = { Bridge, ensureBody }
+module.exports = { Bridge, ensureBody, ListeningPort }

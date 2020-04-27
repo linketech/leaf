@@ -180,10 +180,10 @@ async function main() {
 		throw new Error(`Unknow build method: ${program.buildWith}`)
 	}
 
-	await ensureFCCustomDomains(config.domain)
 	if (program.debug) {
 		cp.execSync(`npx @alicloud/fun local start ${config.domain}`, funOpts)
 	} else {
+		await ensureFCCustomDomains(config.domain)
 		cp.execSync('npx @alicloud/fun deploy -y', funOpts)
 		fs.removeSync(config.dstPath)
 		console.log(`https://${config.domain} deploy success.`)

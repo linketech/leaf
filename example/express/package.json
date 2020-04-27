@@ -14,7 +14,8 @@
   },
   "leafEnv": {
     "MYSQL_USER": "root",
-    "MYSQL_PASS": null
+    "MYSQL_PASS": null,
+    "PROXY_404_TO_ROOT": true
   },
   "leafStatic": [
     "static",

@@ -18,6 +18,14 @@ leaf config
 
 ## Usage
 
+### for the frontend code
+
+No config is needed for the common static html code.
+
+if you want leaf to build the frontend codes for you,
+use the ["build"](#build-script) option to declare these commands.
+
+
 ### for the backend code:
 
 You should let leaf knows your express/koa instance, by calling the listen method.
@@ -50,16 +58,6 @@ app.listen(8080, () => console.log('Server start'))
 ```
 
 Make sure you have a package.json with correct dependencies declaration and package name.
-
-### for the frontend code
-
-No config is needed for the common static html code.
-
-However, if you want leaf to build the frontend codes for you,
-use the ["build"](#build-script) option to declare these commands.
-
-You can also build the code manually,
-just tell leaf the locations of the static files using ["static"](#static) option.
 
 Then run
 
@@ -162,10 +160,9 @@ The follow reserve environment variables are used by leaf
 ```js
 {
 	"env": {
-		// Remove the package.json if you need to put some static files online without any backend code.
-		// In this case, a reserve env var PROXY_404_TO_ROOT can be set to true,
-		// indicating any 404 resources will proxy to /,
-		// which is useful for SPA website.
+		// Append a middleware to the end of the express/koa stack,
+		// indicating any 404 resources will proxy to /, which is useful for SPA website.
+		// default is false.
 		"PROXY_404_TO_ROOT": true,
 
 		// add "cache-control: max-age=xxx" header to the served static files, default is 0

@@ -17,7 +17,9 @@ app.all('', (req, res) => {
 	res.send(`${new Date().toISOString()} hello world!`)
 })
 
-app.listen(8080, () => console.log('Server start'))
+setTimeout(() => {
+	app.listen(8080, () => console.log('Server start'))
+}, 2000)
 
 process.emit('registerEvent', 'initializer', () => { events[0] = Date.now() })
 
