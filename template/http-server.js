@@ -48,34 +48,40 @@ function initTailMiddleware() {
 
 	if (expressApp) {
 		console.log('init express tail middleware')
-		expressApp.use((req, res) => {
-			console.log(req.ip, req.method, req.url)
+		expressApp.use((req, res, next) => {
+			console.log(req.ip, req.method, req.url, 'no route is matched')
 			if (req.method.toUpperCase() !== 'GET') {
+				next()
 				return
 			}
 			if (req.url === '/') {
 				res.status(404)
+				next()
 				return
 			}
 			console.debug('Redirect to root')
 			httpRequest(rootUrl).pipe(res)
+			next()
 		})
 	}
 
 	if (koaApp) {
-		koaApp.use(async (ctx) => {
-			console.log(ctx.ip, ctx.method, ctx.url)
+		koaApp.use(async (ctx, next) => {
+			console.log(ctx.ip, ctx.method, ctx.url, 'no route is matched')
 			if (ctx.method.toUpperCase() !== 'GET') {
+				await next()
 				return
 			}
 			if (ctx.url === '/') {
 				ctx.status = 404
+				await next()
 				return
 			}
 			if (ctx.status === 404) {
 				console.debug('Redirect to root')
 				ctx.body = httpRequest(rootUrl)
 			}
+			next()
 		})
 	}
 }
