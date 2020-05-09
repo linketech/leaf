@@ -61,7 +61,6 @@ function initTailMiddleware() {
 			}
 			console.debug('Redirect to root')
 			httpRequest(rootUrl).pipe(res)
-			next()
 		})
 	}
 
