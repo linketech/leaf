@@ -2,12 +2,12 @@
 const { promisify } = require('util')
 const http = require('http')
 const httpRequest = require('request')
-const { Bridge, ensureBody, ListeningPort } = require('./bridge')
+const { Bridge, ensureBody } = require('./bridge')
 const config = require('./leaf.json')
 
 const sleep = promisify(setTimeout)
 const maxAge = (process.env.STATIC_FILES_MAX_AGE || 0) * 1000
-
+let bridge = null
 
 let expressApp = null
 try {
@@ -32,7 +32,7 @@ try {
 	const rawKoaCallback = Koa.prototype.callback
 	Koa.prototype.callback = function callback() {
 		koaApp = this
-		config.static.forEach(e => this.use(serveKoa(e, { maxage: maxAge })))
+		config.static.reverse().forEach(e => this.middleware.unshift(serveKoa(e, { maxage: maxAge })))
 		return rawKoaCallback.apply(this)
 	}
 } catch (e) {
@@ -41,7 +41,6 @@ try {
 
 function initTailMiddleware() {
 	const proxy404ToRoot = JSON.parse(process.env.PROXY_404_TO_ROOT || false)
-	const rootUrl = `http://localhost:${ListeningPort}/`
 	if (!proxy404ToRoot) {
 		return
 	}
@@ -60,7 +59,7 @@ function initTailMiddleware() {
 				return
 			}
 			console.debug('Redirect to root')
-			httpRequest(rootUrl).pipe(res)
+			httpRequest(bridge.RootUrl).pipe(res)
 		})
 	}
 
@@ -78,20 +77,23 @@ function initTailMiddleware() {
 			}
 			if (ctx.status === 404) {
 				console.debug('Redirect to root')
-				ctx.body = httpRequest(rootUrl)
+				ctx.body = httpRequest(bridge.RootUrl)
 			}
 			next()
 		})
 	}
 }
 
-let bridge = null
 const rawCreateServer = http.createServer
 http.createServer = (...args) => {
 	initTailMiddleware()
 	http.createServer = rawCreateServer
-	bridge = new Bridge(args[0])
-	return { listen: (...p) => console.debug('disable listen call', p) }
+	return {
+		listen: (...p) => {
+			bridge = new Bridge(args[0], p[0])
+			console.debug('disable listen call', p)
+		},
+	}
 }
 
 async function getBridge(expired = Date.now() + 30000) {

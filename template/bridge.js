@@ -4,8 +4,6 @@ const http = require('http')
 const getRawBody = require('raw-body')
 const etag = require('etag')
 
-const ListeningPort = 60080
-
 function getRawBodyAsync(stream) {
 	return new Promise((resolve, reject) => {
 		getRawBody(stream, (error, body) => {
@@ -31,13 +29,13 @@ function httpRequest(requestOptions, body) {
 	})
 }
 
-async function handle(ctx) {
+async function handle(ctx, port) {
 	try {
 		const requestOptions = {
 			method: ctx.request.method,
 			path: url.format({ pathname: ctx.request.path, query: ctx.request.queries }),
 			headers: ctx.request.headers,
-			port: ListeningPort,
+			port,
 			// socketPath: this.socketPath,
 		}
 		const response = await httpRequest(requestOptions, ctx.request.body)
@@ -70,17 +68,32 @@ async function handle(ctx) {
 }
 
 class Bridge {
-	constructor(httpListener) {
+	static get DefaultPort() { return 60080 }
+
+	constructor(httpListener, listeningPort) {
 		this.rawServer = http.createServer(httpListener)
 		// this.socketPath = `/tmp/server-${Math.random().toString(36).substring(2, 15)}.sock`
-		console.log('bridge listen', ListeningPort)
-		this.rawServer.listen(ListeningPort)
+		this.listeningPort = listeningPort
+		console.log('bridge listen', this.listeningPort)
+		this.rawServer.listen(this.listeningPort).once('error', (e) => {
+			if (e.message.indexOf('EACCES') !== -1 || e.message.indexOf('EADDRINUSE') !== -1) {
+				this.listeningPort = Bridge.DefaultPort
+				console.log(e.message)
+				console.log(`Port ${listeningPort} is not available, use the default port ${this.listeningPort} instead.`)
+				this.rawServer.listen(this.listeningPort)
+			} else {
+				throw e
+			}
+		})
 	}
 
-	// eslint-disable-next-line class-methods-use-this
+	get RootUrl() {
+		return `http://localhost:${this.listeningPort}`
+	}
+
 	handle(ctx) {
-		return handle(ctx)
+		return handle(ctx, this.listeningPort)
 	}
 }
 
-module.exports = { Bridge, ensureBody, ListeningPort }
+module.exports = { Bridge, ensureBody }
