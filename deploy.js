@@ -122,7 +122,7 @@ const templateYML = {
 		[config.logProjectName]: {
 			Type: 'Aliyun::Serverless::Log',
 			Properties: {
-				Description: `log project for ${config.domain}`,
+				Description: 'log project for leaf',
 			},
 			[config.logStoreName]: {
 				Type: 'Aliyun::Serverless::Log::Logstore',
