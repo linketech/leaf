@@ -16,20 +16,19 @@ program
 	.option('-v, --verbose', 'display the full logs of serverless')
 	.parse(process.argv)
 
-const leafConfig = getConfig(program.args[0], false)
-
 async function ensureAlicloud() {
 	const config = await getProfileFromFile()
 	const sls = new ALY.SLS({
 		accessKeyId: config.accessKeyId,
 		secretAccessKey: config.accessKeySecret,
-		endpoint: `http://${config.defaultRegion}.sls.aliyuncs.com`,
+		endpoint: `http://${config.defaultRegion}.log.aliyuncs.com`,
 		apiVersion: '2015-06-01',
 	})
 	return sls
 }
 
 async function getLogs(from, to, offset) {
+	const leafConfig = await getConfig(program.args[0], false)
 	const sls = await ensureAlicloud()
 	sls.getLogsAsync = promisify(sls.getLogs.bind(sls))
 	const data = await sls.getLogsAsync({
@@ -54,6 +53,7 @@ async function getLogs(from, to, offset) {
 }
 
 async function tailLogs() {
+	const leafConfig = await getConfig(program.args[0], false)
 	const end = Math.floor(Date.now() / 1000)
 	const start = end - (leafConfig.serverless.logTTL * 24 * 3600)
 	let count = Number(program.tail)

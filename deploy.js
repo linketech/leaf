@@ -50,50 +50,30 @@ const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	})
 }
 
-const config = getConfig(program.args[0])
-console.log('deploy function', config.name)
+async function main() {
+	const config = await getConfig(program.args[0])
+	console.log('deploy function', config.name)
 
-const Runtime = 'nodejs10'
-const templateYML = {
-	ROSTemplateFormatVersion: '2015-09-01',
-	Transform: 'Aliyun::Serverless-2018-04-03',
-	Resources: {
-		[config.serviceName]: {
-			Type: 'Aliyun::Serverless::Service',
-			Properties: {
-				Description: config.description,
-				Policies: ['AliyunECSNetworkInterfaceManagementAccess'],
-				...(config.vpc ? { VpcConfig: config.vpc } : {}),
-				LogConfig: {
-					Project: config.logProjectName,
-					Logstore: config.logStoreName,
-				},
-			},
-			[config.httpTriggerName]: {
-				Type: 'Aliyun::Serverless::Function',
+	const Runtime = 'nodejs10'
+	const templateYML = {
+		ROSTemplateFormatVersion: '2015-09-01',
+		Transform: 'Aliyun::Serverless-2018-04-03',
+		Resources: {
+			[config.serviceName]: {
+				Type: 'Aliyun::Serverless::Service',
 				Properties: {
-					Handler: 'handler.httpHandler',
-					Initializer: 'handler.initializer',
-					Runtime,
-					CodeUri: './',
-					MemorySize: config.serverless.memory,
-					Timeout: config.serverless.timeout,
-					InitializationTimeout: config.serverless.timeout,
-					EnvironmentVariables: config.env,
-					InstanceConcurrency: 100,
-				},
-				Events: {
-					httpTrigger: {
-						Type: 'HTTP',
-						Properties: { AuthType: 'ANONYMOUS', Methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'] },
+					Description: config.description,
+					Policies: ['AliyunECSNetworkInterfaceManagementAccess'],
+					...(config.vpc ? { VpcConfig: config.vpc } : {}),
+					LogConfig: {
+						Project: config.logProjectName,
+						Logstore: config.logStoreName,
 					},
 				},
-			},
-			...(R.isEmpty(config.timer) ? {} : {
-				[config.timerTriggerName]: {
+				[config.httpTriggerName]: {
 					Type: 'Aliyun::Serverless::Function',
 					Properties: {
-						Handler: 'handler.timerHandler',
+						Handler: 'handler.httpHandler',
 						Initializer: 'handler.initializer',
 						Runtime,
 						CodeUri: './',
@@ -104,45 +84,65 @@ const templateYML = {
 						InstanceConcurrency: 100,
 					},
 					Events: {
-						...R.mapObjIndexed((v, k) => ({
-							Type: 'Timer',
-							Properties: { Payload: k, CronExpression: v, Enable: true },
-						}), config.timer),
+						httpTrigger: {
+							Type: 'HTTP',
+							Properties: { AuthType: 'ANONYMOUS', Methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'] },
+						},
 					},
 				},
-			}),
-		},
-		[config.domain]: {
-			Type: 'Aliyun::Serverless::CustomDomain',
-			Properties: {
-				Protocol: 'HTTP',
-				RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
+				...(R.isEmpty(config.timer) ? {} : {
+					[config.timerTriggerName]: {
+						Type: 'Aliyun::Serverless::Function',
+						Properties: {
+							Handler: 'handler.timerHandler',
+							Initializer: 'handler.initializer',
+							Runtime,
+							CodeUri: './',
+							MemorySize: config.serverless.memory,
+							Timeout: config.serverless.timeout,
+							InitializationTimeout: config.serverless.timeout,
+							EnvironmentVariables: config.env,
+							InstanceConcurrency: 100,
+						},
+						Events: {
+							...R.mapObjIndexed((v, k) => ({
+								Type: 'Timer',
+								Properties: { Payload: k, CronExpression: v, Enable: true },
+							}), config.timer),
+						},
+					},
+				}),
 			},
-		},
-		[config.logProjectName]: {
-			Type: 'Aliyun::Serverless::Log',
-			Properties: {
-				Description: 'log project for leaf',
-			},
-			[config.logStoreName]: {
-				Type: 'Aliyun::Serverless::Log::Logstore',
+			[config.domain]: {
+				Type: 'Aliyun::Serverless::CustomDomain',
 				Properties: {
-					TTL: config.serverless.logTTL,
-					ShardCount: 1,
+					Protocol: 'HTTP',
+					RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
+				},
+			},
+			[config.logProjectName]: {
+				Type: 'Aliyun::Serverless::Log',
+				Properties: {
+					Description: 'log project for leaf',
+				},
+				[config.logStoreName]: {
+					Type: 'Aliyun::Serverless::Log::Logstore',
+					Properties: {
+						TTL: config.serverless.logTTL,
+						ShardCount: 1,
+					},
 				},
 			},
 		},
-	},
-}
+	}
 
-const templateDockerfile = `
-	FROM aliyunfc/runtime-nodejs10:build
-	COPY ./package.json .
-	RUN npx tyarn install --production
-	${config.build ? `RUN ${config.build}` : ''}
-`.replace(/\n\t/g, '\n')
+	const templateDockerfile = `
+		FROM aliyunfc/runtime-nodejs10:build
+		COPY ./package.json .
+		RUN npx tyarn install --production
+		${config.build ? `RUN ${config.build}` : ''}
+	`.replace(/\n\t/g, '\n')
 
-async function main() {
 	// generate config
 	console.debug('generating config files')
 	copyAllTo(path.join(__dirname, 'template'), config.dstPath, ['**/*'], { dot: true })
