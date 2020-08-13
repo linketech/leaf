@@ -1,6 +1,6 @@
 {
   "name": "@linke/leaf",
-  "version": "1.9.0",
+  "version": "2.0.0",
   "description": "A cli tool maked by (l)ink(e) to deploy serverless to (a)liyun (f)untion computing.",
   "main": "index.js",
   "bin": {
