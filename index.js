@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 const path = require('path')
 const { Command } = require('commander')
-const packageJson = require('./package.json')
+const updateNotifier = require('update-notifier')
+const pkg = require('./package.json')
+
+updateNotifier({ pkg, updateCheckInterval: 3600 }).notify()
 
 const program = new Command()
 program
-	.version(packageJson.version)
+	.version(pkg.version)
 
 program
 	.command('deploy [path]', 'Performs a deployment', { isDefault: true, executableFile: path.join(__dirname, 'deploy.js') })
