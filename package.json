@@ -1,6 +1,6 @@
 {
   "name": "@linke/leaf",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "A cli tool maked by (l)ink(e) to deploy serverless to (a)liyun (f)untion computing.",
   "main": "index.js",
   "bin": {
@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@alicloud/fc2": "^2.2.0",
-    "@alicloud/fun": "^3.6.11",
+    "@alicloud/fun": "^3.6.19",
     "@alicloud/pop-core": "^1.7.9",
     "adm-zip": "^0.4.14",
     "aliyun-sdk": "^1.12.3",
@@ -33,8 +33,8 @@
     "update-notifier": "^4.1.0"
   },
   "devDependencies": {
-    "eslint": "^6.6.0",
-    "eslint-config-airbnb-base": "^14.0.0",
-    "eslint-plugin-import": "^2.18.2"
+    "eslint": "^7.11.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.22.1"
   }
 }
