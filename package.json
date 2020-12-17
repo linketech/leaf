@@ -11,7 +11,7 @@
     "url": "https://github.com/linketech/leaf.git"
   },
   "scripts": {
-    "publish": "npm publish --access public --registry https://registry.npmjs.org",
+    "pub": "npm publish --access public --registry https://registry.npmjs.org",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "vincent-ng",

@@ -1,5 +1,5 @@
 const listeners = {}
-const eventName = name => `alicloud:timer:${name}`
+const eventName = (name) => `alicloud:timer:${name}`
 
 // hack
 try {
@@ -49,7 +49,7 @@ function registerEvent(p1, p2) {
 	listeners[name] = [handler]
 	process.on(eventName(name), (callback) => {
 		try {
-			Promise.all(listeners[name].map(f => f())).then(() => callback()).catch(callback)
+			Promise.all(listeners[name].map((f) => f())).then(() => callback()).catch(callback)
 		} catch (e) {
 			callback(e)
 		}

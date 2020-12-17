@@ -18,7 +18,7 @@ try {
 	app.init = function init() {
 		expressApp = this
 		rawExpressAppInit.apply(this)
-		config.static.forEach(e => this.use(serveExpress(e, { maxAge })))
+		config.static.forEach((e) => this.use(serveExpress(e, { maxAge })))
 	}
 } catch (e) {
 	// it's fine
@@ -32,7 +32,7 @@ try {
 	const rawKoaCallback = Koa.prototype.callback
 	Koa.prototype.callback = function callback() {
 		koaApp = this
-		config.static.reverse().forEach(e => this.middleware.unshift(serveKoa(e, { maxage: maxAge })))
+		config.static.reverse().forEach((e) => this.middleware.unshift(serveKoa(e, { maxage: maxAge })))
 		return rawKoaCallback.apply(this)
 	}
 } catch (e) {

@@ -23,7 +23,7 @@ async function ensureBody(request) {
 function httpRequest(requestOptions, body) {
 	return new Promise((resolve, reject) => {
 		const req = http.request(requestOptions, resolve)
-		req.on('error', error => error && reject(error))
+		req.on('error', (error) => error && reject(error))
 		req.write(body)
 		req.end()
 	})

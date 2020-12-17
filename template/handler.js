@@ -11,7 +11,7 @@ module.exports.initializer = (context, callback) => {
 }
 
 module.exports.httpHandler = (request, response, context) => {
-	httpHandler(request, response, context).catch(e => response.send(e))
+	httpHandler(request, response, context).catch((e) => response.send(e))
 }
 
 module.exports.timerHandler = (event, context, callback) => {
