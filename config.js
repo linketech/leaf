@@ -1,4 +1,5 @@
 #!/usr/bin/env node
 const cp = require('child_process')
+const { funExec } = require('./lib/alicloud')
 
-cp.execSync('npx @alicloud/fun config', { stdin: 'inherit', stdio: 'inherit' })
+cp.execSync(`${funExec} config`, { stdin: 'inherit', stdio: 'inherit' })

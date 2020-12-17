@@ -74,8 +74,8 @@ async function tailLogs() {
 				formatedMap[e] = `[${logLevel} ${moment(timestamp).format('YYMMDD HH:mm:ss Z')}] [${requestIdShort}] ${splits.join(' ')}`
 			}
 		}),
-		R.filter(e => program.verbose || formatedMap[e]),
-		R.map(e => formatedMap[e] || e),
+		R.filter((e) => program.verbose || formatedMap[e]),
+		R.map((e) => formatedMap[e] || e),
 		// eslint-disable-next-line no-plusplus
 		R.filter(() => count-- > 0),
 	)
@@ -98,8 +98,8 @@ async function tailLogs() {
 		}
 	}
 	if (!program.reverse) {
-		allLogs.reverse().forEach(e => console.log(e))
+		allLogs.reverse().forEach((e) => console.log(e))
 	}
 }
 
-tailLogs().catch(e => console.error(e.errorMessage || e))
+tailLogs().catch((e) => console.error(e.errorMessage || e))

@@ -10,7 +10,7 @@ const request = require('request')
 const progress = require('request-progress')
 const AdmZip = require('adm-zip')
 const { getConfig, leafConfigFields } = require('./lib/config-loader')
-const { ensureFCCustomDomains } = require('./lib/alicloud')
+const { ensureFCCustomDomains, funExec } = require('./lib/alicloud')
 
 const program = new Command()
 
@@ -181,10 +181,10 @@ async function main() {
 	}
 
 	if (program.debug) {
-		cp.execSync(`npx @alicloud/fun local start ${config.domain}`, funOpts)
+		cp.execSync(`${funExec} local start ${config.domain}`, funOpts)
 	} else {
 		await ensureFCCustomDomains(config.domain)
-		cp.execSync('npx @alicloud/fun deploy -y', funOpts)
+		cp.execSync(`${funExec} deploy -y`, funOpts)
 		fs.removeSync(config.dstPath)
 		console.log(`https://${config.domain} deploy success.`)
 	}

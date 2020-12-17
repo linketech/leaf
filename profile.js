@@ -12,7 +12,6 @@ program
 	.option('-d, --delete <ProfileName>', 'delete the specified profile')
 	.parse(process.argv)
 
-
 async function main() {
 	const aliProfile = path.join(process.env.HOME || os.homedir(), '.fcli', 'config.yaml')
 	if (!await fs.pathExists(aliProfile)) {
@@ -64,4 +63,4 @@ async function main() {
 	console.log('-h or --help for command help')
 }
 
-main().catch(e => console.error(e.errorMessage || e))
+main().catch((e) => console.error(e.errorMessage || e))
