@@ -35,8 +35,8 @@ router.post('/', async (ctx) => {
 	const uris = text.match(urlRegex) || []
 	uris.push(uri)
 
-	const domains = _.chain(uris).map(e => url.parse(e, false, true).hostname).uniq().value()
-	const ips = await Promise.all(_.map(domains, e => resolve(e).then(arr => arr[0])))
+	const domains = _.chain(uris).map((e) => url.parse(e, false, true).hostname).uniq().value()
+	const ips = await Promise.all(_.map(domains, (e) => resolve(e).then((arr) => arr[0])))
 	const ipMap = _.zipObject(domains, ips)
 	const output = _.map(ipMap, (v, k) => `${v} ${k}`).join('\n')
 

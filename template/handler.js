@@ -1,5 +1,5 @@
-const { httpHandler } = require('./http-server')
 const { handleEvent } = require('./timer')
+const { httpHandler } = require('./http-server')
 
 process.chdir('src')
 // eslint-disable-next-line import/no-unresolved

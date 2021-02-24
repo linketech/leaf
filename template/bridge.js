@@ -16,10 +16,6 @@ function getRawBodyAsync(stream) {
 	})
 }
 
-async function ensureBody(request) {
-	request.body = request.body || await getRawBodyAsync(request)
-}
-
 function httpRequest(requestOptions, body) {
 	return new Promise((resolve, reject) => {
 		const req = http.request(requestOptions, resolve)
@@ -29,16 +25,58 @@ function httpRequest(requestOptions, body) {
 	})
 }
 
-async function handle(ctx, port) {
+let bridge = null
+class Bridge {
+	static get DefaultPort() { return 60080 }
+
+	static get IsInit() { return !!bridge }
+
+	static get Instance() {
+		if (!bridge) {
+			throw new Error('Bridge has not inited yet')
+		}
+		return bridge
+	}
+
+	static Init(httpListener, listeningPort) {
+		if (bridge) {
+			throw new Error('Bridge has inited')
+		}
+		bridge = new Bridge(httpListener, listeningPort)
+	}
+
+	constructor(httpListener, listeningPort) {
+		this.rawServer = http.createServer(httpListener)
+		// this.socketPath = `/tmp/server-${Math.random().toString(36).substring(2, 15)}.sock`
+		this.listeningPort = listeningPort
+		console.log('bridge listen', this.listeningPort)
+		this.rawServer.listen(this.listeningPort).once('error', (e) => {
+			if (e.message.indexOf('EACCES') !== -1 || e.message.indexOf('EADDRINUSE') !== -1) {
+				this.listeningPort = Bridge.DefaultPort
+				console.log(e.message)
+				console.log(`Port ${listeningPort} is not available, use the default port ${this.listeningPort} instead.`)
+				this.rawServer.listen(this.listeningPort)
+			} else {
+				throw e
+			}
+		})
+	}
+
+	get RootUrl() {
+		return `http://localhost:${this.listeningPort}`
+	}
+}
+
+async function handleHttp(ctx) {
 	try {
 		const requestOptions = {
 			method: ctx.request.method,
 			path: url.format({ pathname: ctx.request.path, query: ctx.request.queries }),
 			headers: ctx.request.headers,
-			port,
+			port: Bridge.Instance.listeningPort,
 			// socketPath: this.socketPath,
 		}
-		const response = await httpRequest(requestOptions, ctx.request.body)
+		const response = await httpRequest(requestOptions, await getRawBodyAsync(ctx.request))
 		const body = await getRawBodyAsync(response)
 
 		const { statusCode, headers } = response
@@ -67,33 +105,4 @@ async function handle(ctx, port) {
 	}
 }
 
-class Bridge {
-	static get DefaultPort() { return 60080 }
-
-	constructor(httpListener, listeningPort) {
-		this.rawServer = http.createServer(httpListener)
-		// this.socketPath = `/tmp/server-${Math.random().toString(36).substring(2, 15)}.sock`
-		this.listeningPort = listeningPort
-		console.log('bridge listen', this.listeningPort)
-		this.rawServer.listen(this.listeningPort).once('error', (e) => {
-			if (e.message.indexOf('EACCES') !== -1 || e.message.indexOf('EADDRINUSE') !== -1) {
-				this.listeningPort = Bridge.DefaultPort
-				console.log(e.message)
-				console.log(`Port ${listeningPort} is not available, use the default port ${this.listeningPort} instead.`)
-				this.rawServer.listen(this.listeningPort)
-			} else {
-				throw e
-			}
-		})
-	}
-
-	get RootUrl() {
-		return `http://localhost:${this.listeningPort}`
-	}
-
-	handle(ctx) {
-		return handle(ctx, this.listeningPort)
-	}
-}
-
-module.exports = { Bridge, ensureBody }
+module.exports = { Bridge, handleHttp }

@@ -2,12 +2,11 @@
 const { promisify } = require('util')
 const http = require('http')
 const httpRequest = require('request')
-const { Bridge, ensureBody } = require('./bridge')
+const { Bridge, handleHttp } = require('./bridge')
 const config = require('./leaf.json')
 
 const sleep = promisify(setTimeout)
 const maxAge = (process.env.STATIC_FILES_MAX_AGE || 0) * 1000
-let bridge = null
 
 let expressApp = null
 try {
@@ -59,7 +58,7 @@ function initTailMiddleware() {
 				return
 			}
 			console.debug('Redirect to root')
-			httpRequest(bridge.RootUrl).pipe(res)
+			httpRequest(Bridge.Instance.RootUrl).pipe(res)
 		})
 	}
 
@@ -77,7 +76,7 @@ function initTailMiddleware() {
 			}
 			if (ctx.status === 404) {
 				console.debug('Redirect to root')
-				ctx.body = httpRequest(bridge.RootUrl)
+				ctx.body = httpRequest(Bridge.Instance.RootUrl)
 			}
 			next()
 		})
@@ -90,31 +89,31 @@ http.createServer = (...args) => {
 	http.createServer = rawCreateServer
 	return {
 		listen: (...p) => {
-			bridge = new Bridge(args[0], p[0])
+			Bridge.Init(args[0], p[0])
 			console.debug('disable listen call', p)
 		},
 	}
 }
 
-async function getBridge(expired = Date.now() + 30000) {
-	while (!bridge && Date.now() < expired) {
+process.emit('registerEvent', 'initializer', async () => {
+	const expired = Date.now() + 30000
+	while (!Bridge.IsInit && Date.now() < expired) {
 		console.debug('express/koa is not listening yet')
 		// eslint-disable-next-line no-await-in-loop
 		await sleep(2000)
 	}
-	return bridge
-}
+	if (!Bridge.IsInit) {
+		throw new Error('express/koa instance not found')
+	}
+})
 
 async function httpHandler(request, response, context) {
-	await ensureBody(request) // todo: can't getBody after sleep
-
-	bridge = bridge || await getBridge()
-	if (!bridge) {
+	if (!Bridge.IsInit) {
 		console.debug('return server is not ready')
 		response.send('server is not ready')
 	} else {
 		// console.debug('server is ready')
-		await bridge.handle({ request, response, context })
+		await handleHttp({ request, response, context })
 	}
 }
 
