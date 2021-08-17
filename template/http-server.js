@@ -52,7 +52,7 @@ function initTailMiddleware() {
 				next()
 				return
 			}
-			if (req.url === '/') {
+			if (req.url === '/' || /\.\w+$/.test(req.url)) {
 				res.status(404)
 				next()
 				return
@@ -69,7 +69,7 @@ function initTailMiddleware() {
 				await next()
 				return
 			}
-			if (ctx.url === '/') {
+			if (ctx.url === '/' || /\.\w+$/.test(ctx.url)) {
 				ctx.status = 404
 				await next()
 				return
