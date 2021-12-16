@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 const cp = require('child_process')
 const fs = require('fs-extra')
 const path = require('path')
@@ -42,6 +43,7 @@ function downloadDeps(packageJson, pathName) {
 const copyAllTo = (srcPath, dstPath, globList, opts) => {
 	const srcList = globby.sync(globList, { ...opts, cwd: srcPath })
 	// console.debug('copy', srcList, 'to', dstPath)
+	fs.ensureDirSync(dstPath)
 	srcList.forEach((e) => {
 		const src = path.join(srcPath, e)
 		const dest = path.join(dstPath, e)
@@ -70,26 +72,35 @@ async function main() {
 						Logstore: config.logStoreName,
 					},
 				},
-				[config.httpTriggerName]: {
-					Type: 'Aliyun::Serverless::Function',
-					Properties: {
-						Handler: 'handler.httpHandler',
-						Initializer: 'handler.initializer',
-						Runtime,
-						CodeUri: './',
-						MemorySize: config.serverless.memory,
-						Timeout: config.serverless.timeout,
-						InitializationTimeout: config.serverless.timeout,
-						EnvironmentVariables: config.env,
-						InstanceConcurrency: 100,
-					},
-					Events: {
-						httpTrigger: {
-							Type: 'HTTP',
-							Properties: { AuthType: 'ANONYMOUS', Methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'] },
+				...(config.timerOnly ? {} : {
+					[config.httpTriggerName]: {
+						Type: 'Aliyun::Serverless::Function',
+						Properties: {
+							Handler: 'handler.httpHandler',
+							Initializer: 'handler.initializer',
+							Runtime,
+							CodeUri: './',
+							MemorySize: config.serverless.memory,
+							Timeout: config.serverless.timeout,
+							InitializationTimeout: config.serverless.timeout,
+							EnvironmentVariables: config.env,
+							InstanceConcurrency: 100,
+						},
+						Events: {
+							httpTrigger: {
+								Type: 'HTTP',
+								Properties: { AuthType: 'ANONYMOUS', Methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'] },
+							},
 						},
 					},
-				},
+					[config.domain]: {
+						Type: 'Aliyun::Serverless::CustomDomain',
+						Properties: {
+							Protocol: 'HTTP',
+							RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
+						},
+					},
+				}),
 				...(R.isEmpty(config.timer) ? {} : {
 					[config.timerTriggerName]: {
 						Type: 'Aliyun::Serverless::Function',
@@ -112,13 +123,6 @@ async function main() {
 						},
 					},
 				}),
-			},
-			[config.domain]: {
-				Type: 'Aliyun::Serverless::CustomDomain',
-				Properties: {
-					Protocol: 'HTTP',
-					RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
-				},
 			},
 			[config.logProjectName]: {
 				Type: 'Aliyun::Serverless::Log',
@@ -153,7 +157,7 @@ async function main() {
 	}
 	fs.writeFileSync(path.join(config.dstPath, 'package.json'), JSON.stringify(config.packageJson, null, 2))
 	fs.writeFileSync(path.join(config.dstPath, 'leaf.json'), JSON.stringify(R.pickAll(leafConfigFields, config), null, 2))
-	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.safeDump(templateYML))
+	fs.writeFileSync(path.join(config.dstPath, 'template.yml'), yaml.dump(templateYML))
 
 	// copy src files
 	console.debug('copying file to', config.dstCodePath)
@@ -181,6 +185,7 @@ async function main() {
 	}
 
 	if (program.debug) {
+		// todo timerOlny can not debug
 		cp.execSync(`${funExec} local start ${config.domain}`, funOpts)
 	} else {
 		await ensureFCCustomDomains(config.domain)

@@ -96,6 +96,9 @@ http.createServer = (...args) => {
 }
 
 process.emit('registerEvent', 'initializer', async () => {
+	if (config.timerOnly) {
+		return
+	}
 	const expired = Date.now() + 30000
 	while (!Bridge.IsInit && Date.now() < expired) {
 		console.debug('express/koa is not listening yet')
