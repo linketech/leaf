@@ -17,8 +17,8 @@
   "author": "vincent-ng",
   "license": "ISC",
   "dependencies": {
-    "@alicloud/fc2": "^2.3.0",
-    "@alicloud/fun": "^3.6.24",
+    "@alicloud/fc2": "^2.2.2",
+    "@alicloud/fun": "^3.6.20",
     "@alicloud/pop-core": "^1.7.10",
     "adm-zip": "^0.5.9",
     "aliyun-sdk": "^1.12.3",

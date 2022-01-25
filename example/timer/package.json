@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "leafTimer": {
-    "consoleLog": "0 * * * * *"
+    "consoleLog": "0 0 * * * *"
   }
 }

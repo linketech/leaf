@@ -56,7 +56,6 @@ async function main() {
 	const config = await getConfig(program.args[0])
 	console.log('deploy function', config.name)
 
-	const Runtime = 'nodejs12'
 	const templateYML = {
 		ROSTemplateFormatVersion: '2015-09-01',
 		Transform: 'Aliyun::Serverless-2018-04-03',
@@ -78,7 +77,7 @@ async function main() {
 						Properties: {
 							Handler: 'handler.httpHandler',
 							Initializer: 'handler.initializer',
-							Runtime,
+							Runtime: config.runtime,
 							CodeUri: './',
 							MemorySize: config.serverless.memory,
 							Timeout: config.serverless.timeout,
@@ -107,7 +106,7 @@ async function main() {
 						Properties: {
 							Handler: 'handler.timerHandler',
 							Initializer: 'handler.initializer',
-							Runtime,
+							Runtime: config.runtime,
 							CodeUri: './',
 							MemorySize: config.serverless.memory,
 							Timeout: config.serverless.timeout,
@@ -141,7 +140,7 @@ async function main() {
 	}
 
 	const templateDockerfile = `
-		FROM aliyunfc/runtime-nodejs12:build
+		FROM aliyunfc/runtime-${config.runtime}:build
 		COPY ./package.json .
 		RUN npx tyarn install --production
 		${config.build ? `RUN ${config.build}` : ''}

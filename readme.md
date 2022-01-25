@@ -126,6 +126,7 @@ To declare in leaf.json:
 | serverless	| config of the function compute			| ref to the doc				| Map		|
 | timer			| event trigger of timers					| no timers						| Map		|
 | vpc			| make program under the specified vpc		| no vpc						| Map		|
+| runtime		| container runtime: nodejs6/8/10/12		| nodejs12						| String	|
 |				|											|								|			|
 
 ## Server Code Path
