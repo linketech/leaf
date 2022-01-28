@@ -1,4 +1,4 @@
-/* eslint-disable import/no-unresolved, import/no-extraneous-dependencies */
+/* eslint-disable no-console, import/no-unresolved, import/no-extraneous-dependencies */
 const url = require('url')
 const http = require('http')
 const getRawBody = require('raw-body')
@@ -18,8 +18,10 @@ function getRawBodyAsync(stream) {
 
 function httpRequest(requestOptions, body) {
 	return new Promise((resolve, reject) => {
+		// eslint-disable-next-line no-param-reassign
+		delete requestOptions.headers['content-length']
 		const req = http.request(requestOptions, resolve)
-		req.on('error', (error) => error && reject(error))
+		req.on('error', reject)
 		req.write(body)
 		req.end()
 	})

@@ -1,9 +1,12 @@
-const { promisify } = require('util')
+/* eslint-disable no-console */
+const os = require('os')
+const util = require('util')
 const schedule = require('node-schedule')
 const express = require('express')
+const multiparty = require('multiparty')
 
 const app = express()
-const sleep = promisify(setTimeout)
+const sleep = util.promisify(setTimeout)
 const events = []
 
 app.all('/time', (req, res) => {
@@ -15,6 +18,38 @@ app.all('/time', (req, res) => {
 
 app.all('', (req, res) => {
 	res.send(`${new Date().toISOString()} hello world!`)
+})
+
+const uploadTemplate = (info) => `
+	<html>
+	<body>
+		<form action="/upload" enctype="multipart/form-data" method="post">
+			<input type="text" name="title">
+			<input type="file" name="upload" multiple="multiple">
+			<input type="submit" value="Upload">
+		</form>
+		<div>received fields:</div>
+		<div>${util.inspect(info.fields)}</div>
+		<div>received files:</div>
+		<div>${util.inspect(info.files)}</div>
+		${info.files.upload.map(({ path, originalFilename }) => `<div><a href="${originalFilename}">${path}</a></div>`)}
+	</body>
+	</html>
+`
+app.use('/tmp', express.static(os.tmpdir()))
+app.post('/upload', (req, res) => {
+	console.log(new Date(), req.method, req.url, req.body, req.rawBody)
+	const form = new multiparty.Form()
+
+	form.parse(req, (err, fields, files) => {
+		if (err) {
+			res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' })
+			res.end(err.message)
+			return
+		}
+		res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+		res.end(uploadTemplate({ fields, files }))
+	})
 })
 
 setTimeout(() => {

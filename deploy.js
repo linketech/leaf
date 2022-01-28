@@ -33,7 +33,7 @@ function downloadDeps(packageJson, pathName) {
 		console.debug('Fetching node_modules from cloud', baseUri)
 		progress(request(opts), { throttle: 100 })
 			// eslint-disable-next-line max-len
-			.on('progress', (s) => process.stdout.write(`Download ${s.size.transferred}/${s.size.total} ${Number(s.percent * 100).toFixed(2)}%, Elapsed: ${s.time.elapsed}${s.size.transferred === s.size.total ? '\n' : '\r'}`))
+			.on('progress', (s) => process.stdout.write(`Download ${s.size.transferred}/${s.size.total || '?'} ${Number(s.percent * 100).toFixed(2)}%, Elapsed: ${s.time.elapsed}${s.size.transferred === s.size.total ? '\n' : '\r'}`))
 			.on('close', () => resolve(pathName) || console.log(`Saved to ${pathName}`, '                    '))
 			.on('error', (error) => reject(error))
 			.pipe(fs.createWriteStream(pathName))
@@ -92,13 +92,6 @@ async function main() {
 							},
 						},
 					},
-					[config.domain]: {
-						Type: 'Aliyun::Serverless::CustomDomain',
-						Properties: {
-							Protocol: 'HTTP',
-							RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
-						},
-					},
 				}),
 				...(R.isEmpty(config.timer) ? {} : {
 					[config.timerTriggerName]: {
@@ -123,6 +116,15 @@ async function main() {
 					},
 				}),
 			},
+			...(config.timerOnly ? {} : {
+				[config.domain]: {
+					Type: 'Aliyun::Serverless::CustomDomain',
+					Properties: {
+						Protocol: 'HTTP',
+						RouteConfig: { routes: { '/*': { ServiceName: config.serviceName, FunctionName: config.httpTriggerName } } },
+					},
+				},
+			}),
 			[config.logProjectName]: {
 				Type: 'Aliyun::Serverless::Log',
 				Properties: {
