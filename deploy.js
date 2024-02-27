@@ -144,7 +144,7 @@ async function main() {
 	const templateDockerfile = `
 		FROM aliyunfc/runtime-${config.runtime}:build
 		COPY ./package.json .
-		RUN npx tyarn install --production
+		RUN npm i --production --force --registry https://registry.npmjs.org/
 		${config.build ? `RUN ${config.build}` : ''}
 	`.replace(/\n\t/g, '\n')
 
